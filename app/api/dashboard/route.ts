@@ -1,0 +1,137 @@
+import { NextResponse } from "next/server";
+
+import { requireAuth } from "@/lib/api";
+import { endOfDay, startOfDay, startOfMonth } from "@/lib/date";
+import { connectToDatabase } from "@/lib/db";
+import { TransactionModel } from "@/models/Transaction";
+
+type TxRow = {
+  type: "income" | "expense";
+  amount: number;
+  date: Date;
+  category?: string;
+};
+
+function summarize(transactions: Array<{ type: "income" | "expense"; amount: number }>) {
+  return transactions.reduce(
+    (acc, item) => {
+      if (item.type === "income") {
+        acc.income += item.amount;
+      } else {
+        acc.expense += item.amount;
+      }
+      return acc;
+    },
+    { income: 0, expense: 0 }
+  );
+}
+
+export async function GET() {
+  const auth = await requireAuth();
+  if ("error" in auth) {
+    return auth.error;
+  }
+
+  await connectToDatabase();
+
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  const todayEnd = endOfDay(now);
+  const monthStart = startOfMonth(now);
+  const sevenDaysStart = startOfDay(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000));
+
+  const [allTxRaw, todayTxRaw, monthTxRaw, last7TxRaw, recent] = await Promise.all([
+    TransactionModel.find({}).select("type amount date").lean(),
+    TransactionModel.find({
+      date: { $gte: todayStart, $lte: todayEnd },
+    })
+      .select("type amount")
+      .lean(),
+    TransactionModel.find({
+      date: { $gte: monthStart, $lte: todayEnd },
+    })
+      .select("type amount date category")
+      .lean(),
+    TransactionModel.find({
+      date: { $gte: sevenDaysStart, $lte: todayEnd },
+    })
+      .select("type amount date")
+      .lean(),
+    TransactionModel.find({}).sort({ date: -1, createdAt: -1 }).limit(10).lean(),
+  ]);
+
+  const allTx = allTxRaw as unknown as TxRow[];
+  const todayTx = todayTxRaw as unknown as TxRow[];
+  const monthTx = monthTxRaw as unknown as TxRow[];
+  const last7Tx = last7TxRaw as unknown as TxRow[];
+
+  const total = summarize(allTx);
+  const today = summarize(todayTx);
+  const month = summarize(monthTx);
+
+  const currentBalance = total.income - total.expense;
+  const dailyClosingBalance = allTx.reduce((acc, tx) => {
+    return tx.type === "income" ? acc + tx.amount : acc - tx.amount;
+  }, 0);
+
+  const monthlyBarsMap = new Map<string, { date: string; income: number; expense: number }>();
+  for (const tx of monthTx) {
+    const key = new Date(tx.date).toISOString().slice(5, 10);
+    const existing = monthlyBarsMap.get(key) ?? { date: key, income: 0, expense: 0 };
+
+    if (tx.type === "income") {
+      existing.income += tx.amount;
+    } else {
+      existing.expense += tx.amount;
+    }
+
+    monthlyBarsMap.set(key, existing);
+  }
+
+  const categoryExpenseMap = new Map<string, number>();
+  for (const tx of monthTx) {
+    if (tx.type !== "expense") {
+      continue;
+    }
+
+    const key = tx.category || "Other";
+    categoryExpenseMap.set(key, (categoryExpenseMap.get(key) ?? 0) + tx.amount);
+  }
+
+  const dailyTrendMap = new Map<string, { date: string; income: number; expense: number }>();
+  for (let i = 0; i < 7; i += 1) {
+    const date = new Date(sevenDaysStart.getTime() + i * 24 * 60 * 60 * 1000);
+    const key = date.toISOString().slice(5, 10);
+    dailyTrendMap.set(key, { date: key, income: 0, expense: 0 });
+  }
+
+  for (const tx of last7Tx) {
+    const key = new Date(tx.date).toISOString().slice(5, 10);
+    const existing = dailyTrendMap.get(key);
+    if (!existing) {
+      continue;
+    }
+
+    if (tx.type === "income") {
+      existing.income += tx.amount;
+    } else {
+      existing.expense += tx.amount;
+    }
+  }
+
+  return NextResponse.json({
+    totals: {
+      today,
+      month,
+      currentBalance,
+      dailyClosingBalance,
+    },
+    monthlyBars: Array.from(monthlyBarsMap.values()),
+    categoryBreakdown: Array.from(categoryExpenseMap.entries()).map(([name, value]) => ({
+      name,
+      value,
+    })),
+    dailyTrend: Array.from(dailyTrendMap.values()),
+    recent,
+  });
+}
