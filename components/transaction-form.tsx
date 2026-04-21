@@ -27,6 +27,11 @@ type FormData = {
   date: string;
 };
 
+function getLocalDateInputValue(date = new Date()) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
 function toFormData(entry?: Transaction): FormData {
   const hasSplit = Boolean(entry?.splitPayment);
 
@@ -39,7 +44,7 @@ function toFormData(entry?: Transaction): FormData {
     amount: entry ? String(entry.amount) : "",
     category: entry?.category ?? "",
     description: entry?.description ?? "",
-    date: entry ? entry.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    date: entry ? entry.date.slice(0, 10) : getLocalDateInputValue(),
   };
 }
 

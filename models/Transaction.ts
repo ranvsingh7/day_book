@@ -64,11 +64,17 @@ export type TransactionDocument = Omit<
 };
 
 const existingTransactionModel = models.Transaction;
+const typePath = existingTransactionModel?.schema.path("type") as
+  | { options?: { enum?: unknown } }
+  | undefined;
+const typeEnum = typePath?.options?.enum;
+const hasOwnerInTypeEnum = Array.isArray(typeEnum) && typeEnum.includes("owner");
+
 if (
   existingTransactionModel &&
   (!("paymentMode" in existingTransactionModel.schema.paths) ||
     !("splitPayment" in existingTransactionModel.schema.paths) ||
-    !(existingTransactionModel.schema.path("type") as Schema.Types.String).enumValues.includes("owner"))
+    !hasOwnerInTypeEnum)
 ) {
   delete models.Transaction;
 }
