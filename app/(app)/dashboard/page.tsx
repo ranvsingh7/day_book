@@ -11,21 +11,22 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import type { DashboardResponse } from "@/types/daybook";
 
 const MonthlyBarsChart = dynamic(
-  () => import("@/components/dashboard-charts").then((mod) => mod.MonthlyBarsChart),
+  () => import("../../../components/dashboard-charts").then((mod) => mod.MonthlyBarsChart),
   {
     loading: () => <SkeletonBlock className="h-72 w-full" />,
   }
 );
 
 const ExpenseBreakdownChart = dynamic(
-  () => import("@/components/dashboard-charts").then((mod) => mod.ExpenseBreakdownChart),
+  () =>
+    import("../../../components/dashboard-charts").then((mod) => mod.ExpenseBreakdownChart),
   {
     loading: () => <SkeletonBlock className="h-72 w-full" />,
   }
 );
 
 const DailyTrendChart = dynamic(
-  () => import("@/components/dashboard-charts").then((mod) => mod.DailyTrendChart),
+  () => import("../../../components/dashboard-charts").then((mod) => mod.DailyTrendChart),
   {
     loading: () => <SkeletonBlock className="h-72 w-full" />,
   }
