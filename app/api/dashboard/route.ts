@@ -41,7 +41,7 @@ export async function GET() {
   const monthStart = startOfMonth(now);
   const sevenDaysStart = startOfDay(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000));
 
-  const [allTxRaw, todayTxRaw, monthTxRaw, last7TxRaw, recent] = await Promise.all([
+  const [allTxRaw, todayTxRaw, monthTxRaw, last7TxRaw, recentRaw] = await Promise.all([
     TransactionModel.find({}).select("type amount paymentMode date").lean(),
     TransactionModel.find({
       date: { $gte: todayStart, $lte: todayEnd },
@@ -58,7 +58,11 @@ export async function GET() {
     })
       .select("type amount date")
       .lean(),
-    TransactionModel.find({}).sort({ date: -1, createdAt: -1 }).limit(10).lean(),
+    TransactionModel.find({})
+      .sort({ date: -1, createdAt: -1 })
+      .limit(10)
+      .populate({ path: "userId", select: "name" })
+      .lean(),
   ]);
 
   const allTx = allTxRaw as unknown as TxRow[];
@@ -207,6 +211,15 @@ export async function GET() {
       existing.expense += tx.amount;
     }
   }
+
+  const recent = recentRaw.map((transaction) => {
+    const user = transaction.userId as { name?: string } | null | undefined;
+
+    return {
+      ...transaction,
+      createdBy: user?.name ?? "Unknown",
+    };
+  });
 
   return NextResponse.json({
     totals: {

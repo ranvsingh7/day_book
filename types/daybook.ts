@@ -9,6 +9,8 @@ export type Transaction = {
   category: string;
   description?: string;
   date: string;
+  createdAt?: string;
+  createdBy?: string;
 };
 
 export type Category = {

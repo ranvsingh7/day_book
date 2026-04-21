@@ -7,7 +7,7 @@ import { ArrowDownRight, ArrowUpRight, Wallet } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { TablePagination } from "@/components/table-pagination";
 import { ChartCard, SkeletonBlock } from "@/components/ui";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import type { DashboardResponse } from "@/types/daybook";
 
 const MonthlyBarsChart = dynamic(
@@ -233,7 +233,7 @@ export default function DashboardPage() {
       <section className="card-soft rounded-2xl p-5">
         <h2 className="text-lg font-semibold">Recent Transactions</h2>
         <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
+          <table className="min-w-[920px] w-full text-left text-sm">
             <thead className="text-slate-500">
               <tr>
                 <th className="py-2">Date</th>
@@ -242,6 +242,7 @@ export default function DashboardPage() {
                 <th className="py-2">Category</th>
                 <th className="py-2">Amount</th>
                 <th className="py-2">Description</th>
+                <th className="py-2">Created by</th>
               </tr>
             </thead>
             <tbody>
@@ -253,6 +254,12 @@ export default function DashboardPage() {
                   <td className="py-2">{entry.category}</td>
                   <td className="py-2">{formatCurrency(entry.amount)}</td>
                   <td className="py-2 text-slate-500">{entry.description || "-"}</td>
+                  <td className="py-2">
+                    <p className="font-medium text-slate-700">{entry.createdBy || "Unknown"}</p>
+                    <p className="text-xs text-slate-500">
+                      {formatDateTime(entry.createdAt || entry.date)}
+                    </p>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -62,9 +62,19 @@ export async function GET(request: Request) {
     ];
   }
 
-  const transactions = await TransactionModel.find(where)
+  const transactionsRaw = await TransactionModel.find(where)
     .sort({ date: -1, createdAt: -1 })
+    .populate({ path: "userId", select: "name" })
     .lean();
+
+  const transactions = transactionsRaw.map((transaction) => {
+    const user = transaction.userId as { name?: string } | null | undefined;
+
+    return {
+      ...transaction,
+      createdBy: user?.name ?? "Unknown",
+    };
+  });
 
   return NextResponse.json({ transactions });
 }

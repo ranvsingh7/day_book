@@ -12,7 +12,7 @@ import { TablePagination } from "@/components/table-pagination";
 import { TransactionForm } from "@/components/transaction-form";
 import { SkeletonBlock } from "@/components/ui";
 import { useDebounce } from "@/hooks/use-debounce";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import type { Category, Transaction } from "@/types/daybook";
 
 type Filters = {
@@ -243,7 +243,7 @@ export default function TransactionsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
+            <table className="min-w-[980px] w-full text-left text-sm">
               <thead className="text-slate-500">
                 <tr>
                   <th className="py-2">Date</th>
@@ -252,6 +252,7 @@ export default function TransactionsPage() {
                   <th className="py-2">Category</th>
                   <th className="py-2">Amount</th>
                   <th className="py-2">Description</th>
+                  <th className="py-2">Created by</th>
                   {canManage ? <th className="py-2 text-right">Actions</th> : null}
                 </tr>
               </thead>
@@ -264,6 +265,12 @@ export default function TransactionsPage() {
                     <td className="py-2">{entry.category}</td>
                     <td className="py-2">{formatCurrency(entry.amount)}</td>
                     <td className="py-2">{entry.description || "-"}</td>
+                    <td className="py-2">
+                      <p className="font-medium text-slate-700">{entry.createdBy || "Unknown"}</p>
+                      <p className="text-xs text-slate-500">
+                        {formatDateTime(entry.createdAt || entry.date)}
+                      </p>
+                    </td>
                     {canManage ? (
                       <td className="py-2">
                         <div className="flex justify-end gap-2">
