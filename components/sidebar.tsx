@@ -41,11 +41,11 @@ export function Sidebar({ role }: SidebarProps) {
 
   return (
     <>
-      <aside className="hidden card-soft rounded-2xl p-3 lg:block lg:w-64">
+      <aside className="hidden max-h-[700px] card-soft rounded-2xl p-3 lg:sticky lg:top-4 lg:block lg:w-64">
         <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
           Daybook Ledger
         </p>
-        <nav className="flex flex-col gap-2">
+        <nav className="flex max-h-[450px] flex-col gap-2 overflow-y-auto pr-1">
           {visibleLinks.map((link) => {
             const isActive = pathname === link.href;
             const Icon = link.icon;

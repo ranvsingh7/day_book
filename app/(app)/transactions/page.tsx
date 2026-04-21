@@ -240,6 +240,7 @@ export default function TransactionsPage() {
                 <tr>
                   <th className="py-2">Date</th>
                   <th className="py-2">Type</th>
+                  <th className="py-2">Payment</th>
                   <th className="py-2">Category</th>
                   <th className="py-2">Amount</th>
                   <th className="py-2">Description</th>
@@ -251,6 +252,7 @@ export default function TransactionsPage() {
                   <tr key={entry._id} className="border-t border-slate-200">
                     <td className="py-2">{formatDate(entry.date)}</td>
                     <td className="py-2 capitalize">{entry.type}</td>
+                    <td className="py-2 capitalize">{entry.paymentMode ?? "cash"}</td>
                     <td className="py-2">{entry.category}</td>
                     <td className="py-2">{formatCurrency(entry.amount)}</td>
                     <td className="py-2">{entry.description || "-"}</td>

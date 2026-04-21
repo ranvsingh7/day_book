@@ -17,6 +17,7 @@ type Props = {
 
 type FormData = {
   type: "income" | "expense";
+  paymentMode: "cash" | "online";
   amount: string;
   category: string;
   description: string;
@@ -26,6 +27,7 @@ type FormData = {
 function toFormData(entry?: Transaction): FormData {
   return {
     type: entry?.type ?? "income",
+    paymentMode: entry?.paymentMode ?? "cash",
     amount: entry ? String(entry.amount) : "",
     category: entry?.category ?? "",
     description: entry?.description ?? "",
@@ -127,6 +129,23 @@ export function TransactionForm({ categories, initial, onSuccess }: Props) {
             required
           />
 
+          <SelectField
+            label="Payment Mode"
+            value={formData.paymentMode}
+            onChange={(value) =>
+              setFormData((current) => ({ ...current, paymentMode: value as "cash" | "online" }))
+            }
+            options={[
+              { value: "cash", label: "Cash" },
+              { value: "online", label: "Online" },
+            ]}
+            required
+          />
+
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+
           <InputField
             label="Amount"
             type="number"
@@ -137,9 +156,7 @@ export function TransactionForm({ categories, initial, onSuccess }: Props) {
             step="0.01"
             inputMode="decimal"
           />
-        </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
           <SelectField
             label="Category"
             value={formData.category}
@@ -194,6 +211,8 @@ export function TransactionForm({ categories, initial, onSuccess }: Props) {
               </dd>
               <dt className="text-slate-500">Amount</dt>
               <dd className="font-medium text-slate-800">{formData.amount}</dd>
+              <dt className="text-slate-500">Payment</dt>
+              <dd className="font-medium capitalize text-slate-800">{formData.paymentMode}</dd>
               <dt className="text-slate-500">Category</dt>
               <dd className="font-medium text-slate-800">{formData.category}</dd>
               <dt className="text-slate-500">Date</dt>

@@ -12,6 +12,12 @@ const transactionSchema = new Schema(
       required: true,
       min: 0,
     },
+    paymentMode: {
+      type: String,
+      enum: ["cash", "online"],
+      required: true,
+      default: "cash",
+    },
     category: {
       type: String,
       required: true,
@@ -46,6 +52,11 @@ export type TransactionDocument = Omit<
   _id: string;
   userId: Types.ObjectId;
 };
+
+const existingTransactionModel = models.Transaction;
+if (existingTransactionModel && !("paymentMode" in existingTransactionModel.schema.paths)) {
+  delete models.Transaction;
+}
 
 export const TransactionModel =
   models.Transaction || model("Transaction", transactionSchema);

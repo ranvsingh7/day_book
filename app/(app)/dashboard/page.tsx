@@ -15,11 +15,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Banknote, Smartphone, Wallet } from "lucide-react";
 
 import { DashboardHeader } from "@/components/dashboard-header";
 import { TablePagination } from "@/components/table-pagination";
-import { ChartCard, SkeletonBlock, SummaryCard } from "@/components/ui";
+import { ChartCard, SkeletonBlock } from "@/components/ui";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { DashboardResponse } from "@/types/daybook";
 
@@ -76,39 +76,89 @@ export default function DashboardPage() {
         subtitle="Track your daily and monthly performance with clean visual analytics"
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <SummaryCard
-          label="Income today"
-          value={loading ? "..." : formatCurrency(data?.totals.today.income ?? 0)}
-          tone="income"
-          icon={<ArrowUpRight className="text-emerald-600" size={18} />}
-        />
-        <SummaryCard
-          label="Expense today"
-          value={loading ? "..." : formatCurrency(data?.totals.today.expense ?? 0)}
-          tone="expense"
-          icon={<ArrowDownRight className="text-rose-600" size={18} />}
-        />
-        <SummaryCard
-          label="Current balance"
-          value={loading ? "..." : formatCurrency(data?.totals.currentBalance ?? 0)}
-        />
-        <SummaryCard
-          label="Income this month"
-          value={loading ? "..." : formatCurrency(data?.totals.month.income ?? 0)}
-          tone="income"
-          icon={<ArrowUpRight className="text-emerald-600" size={18} />}
-        />
-        <SummaryCard
-          label="Expense this month"
-          value={loading ? "..." : formatCurrency(data?.totals.month.expense ?? 0)}
-          tone="expense"
-          icon={<ArrowDownRight className="text-rose-600" size={18} />}
-        />
-        <SummaryCard
-          label="Daily closing balance"
-          value={loading ? "..." : formatCurrency(data?.totals.dailyClosingBalance ?? 0)}
-        />
+      <section className="card-soft rounded-2xl p-4 sm:p-5">
+        <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <ArrowUpRight size={14} className="text-emerald-600" />
+              Income today
+            </p>
+            <p className="mt-1 text-base font-semibold text-emerald-600">
+              {loading ? "..." : formatCurrency(data?.totals.today.income ?? 0)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <ArrowDownRight size={14} className="text-rose-600" />
+              Expense today
+            </p>
+            <p className="mt-1 text-base font-semibold text-rose-600">
+              {loading ? "..." : formatCurrency(data?.totals.today.expense ?? 0)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <Wallet size={14} className="text-slate-600" />
+              Current balance
+            </p>
+            <p
+              className={`mt-1 text-base font-semibold ${
+                (data?.totals.currentBalance ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
+              }`}
+            >
+              {loading ? "..." : formatCurrency(data?.totals.currentBalance ?? 0)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <ArrowUpRight size={14} className="text-emerald-600" />
+              Income this month
+            </p>
+            <p className="mt-1 text-base font-semibold text-emerald-600">
+              {loading ? "..." : formatCurrency(data?.totals.month.income ?? 0)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <ArrowDownRight size={14} className="text-rose-600" />
+              Expense this month
+            </p>
+            <p className="mt-1 text-base font-semibold text-rose-600">
+              {loading ? "..." : formatCurrency(data?.totals.month.expense ?? 0)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <Banknote size={14} className="text-slate-600" />
+              Cash amount this month
+            </p>
+            <p className="mt-1 text-base font-semibold text-slate-900">
+              {loading ? "..." : formatCurrency(data?.totals.monthByPaymentMode.cash ?? 0)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <Smartphone size={14} className="text-slate-600" />
+              Online amount this month
+            </p>
+            <p className="mt-1 text-base font-semibold text-slate-900">
+              {loading ? "..." : formatCurrency(data?.totals.monthByPaymentMode.online ?? 0)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <Wallet size={14} className="text-slate-600" />
+              Daily closing balance
+            </p>
+            <p
+              className={`mt-1 text-base font-semibold ${
+                (data?.totals.dailyClosingBalance ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
+              }`}
+            >
+              {loading ? "..." : formatCurrency(data?.totals.dailyClosingBalance ?? 0)}
+            </p>
+          </div>
+        </div>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
@@ -199,6 +249,7 @@ export default function DashboardPage() {
               <tr>
                 <th className="py-2">Date</th>
                 <th className="py-2">Type</th>
+                <th className="py-2">Payment</th>
                 <th className="py-2">Category</th>
                 <th className="py-2">Amount</th>
                 <th className="py-2">Description</th>
@@ -209,6 +260,7 @@ export default function DashboardPage() {
                 <tr key={entry._id} className="border-t border-slate-200">
                   <td className="py-2">{formatDate(entry.date)}</td>
                   <td className="py-2 capitalize">{entry.type}</td>
+                  <td className="py-2 capitalize">{entry.paymentMode ?? "cash"}</td>
                   <td className="py-2">{entry.category}</td>
                   <td className="py-2">{formatCurrency(entry.amount)}</td>
                   <td className="py-2 text-slate-500">{entry.description || "-"}</td>

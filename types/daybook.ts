@@ -1,9 +1,11 @@
 export type TransactionType = "income" | "expense";
+export type PaymentMode = "cash" | "online";
 
 export type Transaction = {
   _id: string;
   type: TransactionType;
   amount: number;
+  paymentMode: PaymentMode;
   category: string;
   description?: string;
   date: string;
@@ -18,6 +20,7 @@ export type DashboardResponse = {
   totals: {
     today: { income: number; expense: number };
     month: { income: number; expense: number };
+    monthByPaymentMode: { cash: number; online: number };
     currentBalance: number;
     dailyClosingBalance: number;
   };

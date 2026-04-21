@@ -8,6 +8,7 @@ import { TransactionModel } from "@/models/Transaction";
 type TxRow = {
   type: "income" | "expense";
   amount: number;
+  paymentMode?: "cash" | "online";
   date: Date;
   category?: string;
 };
@@ -50,7 +51,7 @@ export async function GET() {
     TransactionModel.find({
       date: { $gte: monthStart, $lte: todayEnd },
     })
-      .select("type amount date category")
+      .select("type amount paymentMode date category")
       .lean(),
     TransactionModel.find({
       date: { $gte: sevenDaysStart, $lte: todayEnd },
@@ -68,6 +69,17 @@ export async function GET() {
   const total = summarize(allTx);
   const today = summarize(todayTx);
   const month = summarize(monthTx);
+  const monthByPaymentMode = monthTx.reduce(
+    (acc, item) => {
+      if (item.paymentMode === "online") {
+        acc.online += item.amount;
+      } else {
+        acc.cash += item.amount;
+      }
+      return acc;
+    },
+    { cash: 0, online: 0 }
+  );
 
   const currentBalance = total.income - total.expense;
   const dailyClosingBalance = allTx.reduce((acc, tx) => {
@@ -123,6 +135,7 @@ export async function GET() {
     totals: {
       today,
       month,
+      monthByPaymentMode,
       currentBalance,
       dailyClosingBalance,
     },

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const transactionTypeSchema = z.enum(["income", "expense"]);
+const paymentModeSchema = z.enum(["cash", "online"]);
 const mobileSchema = z
   .string()
   .trim()
@@ -42,6 +43,7 @@ export const categorySchema = z.object({
 export const transactionCreateSchema = z.object({
   type: transactionTypeSchema,
   amount: z.coerce.number().positive(),
+  paymentMode: paymentModeSchema.default("cash"),
   category: z.string().trim().min(2).max(40),
   description: z.string().trim().max(200).optional().default(""),
   date: z.coerce.date(),
