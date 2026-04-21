@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Pencil, Trash } from "lucide-react";
+import { Info, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -38,6 +38,8 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [editing, setEditing] = useState<Transaction | null>(null);
+  const [openActionFor, setOpenActionFor] = useState<string | null>(null);
+  const [splitInfoFor, setSplitInfoFor] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deletePending, setDeletePending] = useState(false);
   const [viewer, setViewer] = useState<Viewer | null>(null);
@@ -127,6 +129,37 @@ export default function TransactionsPage() {
         setViewer(payload?.user ?? null);
       });
   }, [queryString]);
+
+  useEffect(() => {
+    if (!openActionFor) {
+      return;
+    }
+
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      if (!target.closest("[data-action-popover='true']")) {
+        setOpenActionFor(null);
+      }
+    };
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpenActionFor(null);
+      }
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [openActionFor]);
 
   const canManage = viewer?.role === "admin";
 
@@ -248,7 +281,7 @@ export default function TransactionsPage() {
                 <tr>
                   <th className="py-2">Date</th>
                   <th className="py-2">Type</th>
-                  <th className="py-2">Payment</th>
+                  <th className="py-2 text-left">Payment</th>
                   <th className="py-2">Category</th>
                   <th className="py-2">Amount</th>
                   <th className="py-2">Description</th>
@@ -261,39 +294,96 @@ export default function TransactionsPage() {
                   <tr key={entry._id} className="border-t border-slate-200">
                     <td className="py-2">{formatDate(entry.date)}</td>
                     <td className="py-2 capitalize">{entry.type}</td>
-                    <td className="py-2 capitalize">{entry.paymentMode ?? "cash"}</td>
+                    <td
+                      className="max-w-[240px] py-2 text-left capitalize leading-snug whitespace-normal break-words"
+                      title={
+                        entry.splitPayment
+                          ? `split (C ${formatCurrency(entry.splitPayment.cashAmount)} + O ${formatCurrency(
+                              entry.splitPayment.onlineAmount
+                            )})`
+                          : (entry.paymentMode ?? "cash")
+                      }
+                    >
+                      {entry.splitPayment ? (
+                        <div className="relative inline-flex items-center gap-1.5">
+                          <p className="font-medium text-slate-700">Split</p>
+                          <button
+                            type="button"
+                            aria-label="Show split payment details"
+                            onClick={() =>
+                              setSplitInfoFor((current) =>
+                                current === entry._id ? null : entry._id
+                              )
+                            }
+                            className="flex h-4 w-4 cursor-pointer items-center justify-center rounded-full border border-slate-300 text-slate-500 transition hover:bg-slate-50"
+                          >
+                            <Info size={10} />
+                          </button>
+                          {splitInfoFor === entry._id ? (
+                            <div className="absolute left-1/2 top-full z-20 mt-1 w-44 -translate-x-1/2 rounded-md border border-slate-200 bg-white p-2 text-left text-xs normal-case text-slate-600 shadow-md">
+                              <p>C:{formatCurrency(entry.splitPayment.cashAmount)}</p>
+                              <p>O:{formatCurrency(entry.splitPayment.onlineAmount)}</p>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        entry.paymentMode ?? "cash"
+                      )}
+                    </td>
                     <td className="py-2">{entry.category}</td>
-                    <td className="py-2">{formatCurrency(entry.amount)}</td>
-                    <td className="py-2">{entry.description || "-"}</td>
+                    <td className="py-2 whitespace-nowrap">{formatCurrency(entry.amount)}</td>
+                    <td className="max-w-[220px] py-2 pr-3">
+                      <p className="truncate" title={entry.description || "-"}>
+                        {entry.description || "-"}
+                      </p>
+                    </td>
                     <td className="py-2">
                       <p className="font-medium text-slate-700">{entry.createdBy || "Unknown"}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="whitespace-nowrap text-xs text-slate-500">
                         {formatDateTime(entry.createdAt || entry.date)}
                       </p>
                     </td>
                     {canManage ? (
                       <td className="py-2">
-                        <div className="flex justify-end gap-2">
-                          <Button
+                        <div className="relative flex justify-end" data-action-popover="true">
+                          <button
                             type="button"
-                            size="xs"
-                            variant="outline"
-                            onClick={() => setEditing(entry)}
-                            className="gap-1 font-medium"
+                            aria-label="Open actions"
+                            onClick={() =>
+                              setOpenActionFor((current) =>
+                                current === entry._id ? null : entry._id
+                              )
+                            }
+                            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50"
                           >
-                            <Pencil size={14} />
-                            Edit
-                          </Button>
-                          <Button
-                            type="button"
-                            size="xs"
-                            variant="danger"
-                            onClick={() => void onDelete(entry._id)}
-                            className="gap-1 font-medium"
-                          >
-                            <Trash size={14} />
-                            Delete
-                          </Button>
+                            <MoreHorizontal size={16} />
+                          </button>
+                          {openActionFor === entry._id ? (
+                            <div className="absolute right-0 top-9 z-20 w-28 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenActionFor(null);
+                                  setEditing(entry);
+                                }}
+                                className="flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                              >
+                                <Pencil size={12} />
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenActionFor(null);
+                                  void onDelete(entry._id);
+                                }}
+                                className="mt-1 flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs font-medium text-rose-700 transition hover:bg-rose-50"
+                              >
+                                <Trash2 size={12} />
+                                Delete
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       </td>
                     ) : null}

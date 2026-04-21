@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Info, Wallet } from "lucide-react";
 
 import { DashboardHeader } from "@/components/dashboard-header";
 import { TablePagination } from "@/components/table-pagination";
@@ -45,6 +45,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [splitInfoFor, setSplitInfoFor] = useState<string | null>(null);
 
   const recentTransactions = data?.recent ?? [];
   const totalPages = Math.max(1, Math.ceil(recentTransactions.length / PAGE_SIZE));
@@ -238,7 +239,7 @@ export default function DashboardPage() {
               <tr>
                 <th className="py-2">Date</th>
                 <th className="py-2">Type</th>
-                <th className="py-2">Payment</th>
+                <th className="py-2 text-left">Payment</th>
                 <th className="py-2">Category</th>
                 <th className="py-2">Amount</th>
                 <th className="py-2">Description</th>
@@ -250,13 +251,52 @@ export default function DashboardPage() {
                 <tr key={entry._id} className="border-t border-slate-200">
                   <td className="py-2">{formatDate(entry.date)}</td>
                   <td className="py-2 capitalize">{entry.type}</td>
-                  <td className="py-2 capitalize">{entry.paymentMode ?? "cash"}</td>
+                  <td
+                    className="max-w-[220px] py-2 text-left capitalize leading-snug whitespace-normal break-words"
+                    title={
+                      entry.splitPayment
+                        ? `split (C ${formatCurrency(entry.splitPayment.cashAmount)} + O ${formatCurrency(
+                            entry.splitPayment.onlineAmount
+                          )})`
+                        : (entry.paymentMode ?? "cash")
+                    }
+                  >
+                    {entry.splitPayment ? (
+                      <div className="relative inline-flex items-center gap-1.5">
+                        <p className="font-medium text-slate-700">Split</p>
+                        <button
+                          type="button"
+                          aria-label="Show split payment details"
+                          onClick={() =>
+                            setSplitInfoFor((current) =>
+                              current === entry._id ? null : entry._id
+                            )
+                          }
+                          className="flex h-4 w-4 cursor-pointer items-center justify-center rounded-full border border-slate-300 text-slate-500 transition hover:bg-slate-50"
+                        >
+                          <Info size={10} />
+                        </button>
+                        {splitInfoFor === entry._id ? (
+                          <div className="absolute left-1/2 top-full z-20 mt-1 w-44 -translate-x-1/2 rounded-md border border-slate-200 bg-white p-2 text-left text-xs normal-case text-slate-600 shadow-md">
+                            <p>C:{formatCurrency(entry.splitPayment.cashAmount)}</p>
+                            <p>O:{formatCurrency(entry.splitPayment.onlineAmount)}</p>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      entry.paymentMode ?? "cash"
+                    )}
+                  </td>
                   <td className="py-2">{entry.category}</td>
-                  <td className="py-2">{formatCurrency(entry.amount)}</td>
-                  <td className="py-2 text-slate-500">{entry.description || "-"}</td>
+                  <td className="py-2 whitespace-nowrap">{formatCurrency(entry.amount)}</td>
+                  <td className="max-w-[220px] py-2 pr-3 text-slate-500">
+                    <p className="truncate" title={entry.description || "-"}>
+                      {entry.description || "-"}
+                    </p>
+                  </td>
                   <td className="py-2">
                     <p className="font-medium text-slate-700">{entry.createdBy || "Unknown"}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="whitespace-nowrap text-xs text-slate-500">
                       {formatDateTime(entry.createdAt || entry.date)}
                     </p>
                   </td>

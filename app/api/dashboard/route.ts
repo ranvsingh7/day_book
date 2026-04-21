@@ -9,9 +9,28 @@ type TxRow = {
   type: "income" | "expense";
   amount: number;
   paymentMode?: "cash" | "online";
+  splitPayment?: {
+    cashAmount?: number;
+    onlineAmount?: number;
+  };
   date: Date;
   category?: string;
 };
+
+function splitAmounts(item: TxRow) {
+  if (item.splitPayment) {
+    return {
+      cash: item.splitPayment.cashAmount ?? 0,
+      online: item.splitPayment.onlineAmount ?? 0,
+    };
+  }
+
+  if (item.paymentMode === "online") {
+    return { cash: 0, online: item.amount };
+  }
+
+  return { cash: item.amount, online: 0 };
+}
 
 function summarize(transactions: Array<{ type: "income" | "expense"; amount: number }>) {
   return transactions.reduce(
@@ -42,16 +61,18 @@ export async function GET() {
   const sevenDaysStart = startOfDay(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000));
 
   const [allTxRaw, todayTxRaw, monthTxRaw, last7TxRaw, recentRaw] = await Promise.all([
-    TransactionModel.find({}).select("type amount paymentMode date").lean(),
+    TransactionModel.find({})
+      .select("type amount paymentMode splitPayment.cashAmount splitPayment.onlineAmount date")
+      .lean(),
     TransactionModel.find({
       date: { $gte: todayStart, $lte: todayEnd },
     })
-      .select("type amount paymentMode")
+      .select("type amount paymentMode splitPayment.cashAmount splitPayment.onlineAmount")
       .lean(),
     TransactionModel.find({
       date: { $gte: monthStart, $lte: todayEnd },
     })
-      .select("type amount paymentMode date category")
+      .select("type amount paymentMode splitPayment.cashAmount splitPayment.onlineAmount date category")
       .lean(),
     TransactionModel.find({
       date: { $gte: sevenDaysStart, $lte: todayEnd },
@@ -78,11 +99,9 @@ export async function GET() {
         return acc;
       }
 
-      if (item.paymentMode === "online") {
-        acc.online += item.amount;
-      } else {
-        acc.cash += item.amount;
-      }
+      const split = splitAmounts(item);
+      acc.cash += split.cash;
+      acc.online += split.online;
 
       return acc;
     },
@@ -94,11 +113,9 @@ export async function GET() {
         return acc;
       }
 
-      if (item.paymentMode === "online") {
-        acc.online += item.amount;
-      } else {
-        acc.cash += item.amount;
-      }
+      const split = splitAmounts(item);
+      acc.cash += split.cash;
+      acc.online += split.online;
 
       return acc;
     },
@@ -111,11 +128,9 @@ export async function GET() {
         return acc;
       }
 
-      if (item.paymentMode === "online") {
-        acc.online += item.amount;
-      } else {
-        acc.cash += item.amount;
-      }
+      const split = splitAmounts(item);
+      acc.cash += split.cash;
+      acc.online += split.online;
 
       return acc;
     },
@@ -127,11 +142,9 @@ export async function GET() {
         return acc;
       }
 
-      if (item.paymentMode === "online") {
-        acc.online += item.amount;
-      } else {
-        acc.cash += item.amount;
-      }
+      const split = splitAmounts(item);
+      acc.cash += split.cash;
+      acc.online += split.online;
 
       return acc;
     },
@@ -139,11 +152,9 @@ export async function GET() {
   );
   const monthByPaymentMode = monthTx.reduce(
     (acc, item) => {
-      if (item.paymentMode === "online") {
-        acc.online += item.amount;
-      } else {
-        acc.cash += item.amount;
-      }
+      const split = splitAmounts(item);
+      acc.cash += split.cash;
+      acc.online += split.online;
       return acc;
     },
     { cash: 0, online: 0 }
@@ -152,11 +163,13 @@ export async function GET() {
   const currentBalance = total.income - total.expense;
   const currentBalanceByPaymentMode = allTx.reduce(
     (acc, tx) => {
-      const key = tx.paymentMode === "online" ? "online" : "cash";
+      const split = splitAmounts(tx);
       if (tx.type === "income") {
-        acc[key] += tx.amount;
+        acc.cash += split.cash;
+        acc.online += split.online;
       } else {
-        acc[key] -= tx.amount;
+        acc.cash -= split.cash;
+        acc.online -= split.online;
       }
       return acc;
     },

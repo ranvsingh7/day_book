@@ -6,6 +6,10 @@ export type Transaction = {
   type: TransactionType;
   amount: number;
   paymentMode: PaymentMode;
+  splitPayment?: {
+    cashAmount: number;
+    onlineAmount: number;
+  };
   category: string;
   description?: string;
   date: string;

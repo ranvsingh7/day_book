@@ -94,9 +94,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid transaction data" }, { status: 400 });
   }
 
+  const userId = new Types.ObjectId(auth.session.userId);
+  const { splitPayment, ...basePayload } = parsed.data;
+
+  if (splitPayment) {
+    const transaction = await TransactionModel.create({
+      ...basePayload,
+      splitPayment,
+      userId,
+    });
+
+    return NextResponse.json({ transaction, splitPayment: true }, { status: 201 });
+  }
+
   const transaction = await TransactionModel.create({
-    ...parsed.data,
-    userId: new Types.ObjectId(auth.session.userId),
+    ...basePayload,
+    userId,
   });
 
   return NextResponse.json({ transaction }, { status: 201 });

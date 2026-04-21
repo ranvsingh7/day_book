@@ -2,6 +2,10 @@ import { z } from "zod";
 
 const transactionTypeSchema = z.enum(["income", "expense"]);
 const paymentModeSchema = z.enum(["cash", "online"]);
+const splitPaymentSchema = z.object({
+  cashAmount: z.coerce.number().positive(),
+  onlineAmount: z.coerce.number().positive(),
+});
 const mobileSchema = z
   .string()
   .trim()
@@ -40,18 +44,64 @@ export const categorySchema = z.object({
   name: z.string().trim().min(2).max(30),
 });
 
-export const transactionCreateSchema = z.object({
-  type: transactionTypeSchema,
-  amount: z.coerce.number().positive(),
-  paymentMode: paymentModeSchema.default("cash"),
-  category: z.string().trim().min(2).max(40),
-  description: z.string().trim().max(200).optional().default(""),
-  date: z.coerce.date(),
-});
+export const transactionCreateSchema = z
+  .object({
+    type: transactionTypeSchema,
+    amount: z.coerce.number().positive(),
+    paymentMode: paymentModeSchema.default("cash"),
+    splitPayment: splitPaymentSchema.optional(),
+    category: z.string().trim().min(2).max(40),
+    description: z.string().trim().max(200).optional().default(""),
+    date: z.coerce.date(),
+  })
+  .refine(
+    (data) => {
+      if (!data.splitPayment) {
+        return true;
+      }
 
-export const transactionUpdateSchema = transactionCreateSchema.partial().extend({
-  amount: z.coerce.number().positive().optional(),
-});
+      const splitTotal = data.splitPayment.cashAmount + data.splitPayment.onlineAmount;
+      return Math.abs(splitTotal - data.amount) < 0.01;
+    },
+    {
+      message: "Split payment amounts must match total amount",
+      path: ["splitPayment"],
+    }
+  );
+
+export const transactionUpdateSchema = z
+  .object({
+    type: transactionTypeSchema,
+    amount: z.coerce.number().positive(),
+    paymentMode: paymentModeSchema.default("cash"),
+    splitPayment: splitPaymentSchema.nullable().optional(),
+    category: z.string().trim().min(2).max(40),
+    description: z.string().trim().max(200).optional().default(""),
+    date: z.coerce.date(),
+  })
+  .partial()
+  .extend({
+    amount: z.coerce.number().positive().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.splitPayment) {
+        return true;
+      }
+
+      if (typeof data.amount !== "number") {
+        return true;
+      }
+
+      const splitTotal = data.splitPayment.cashAmount + data.splitPayment.onlineAmount;
+      return Math.abs(splitTotal - data.amount) < 0.01;
+    },
+    {
+      message: "Split payment amounts must match total amount",
+      path: ["splitPayment"],
+    }
+  )
+;
 
 export const transactionQuerySchema = z.object({
   from: z.string().optional(),

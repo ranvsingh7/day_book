@@ -18,6 +18,9 @@ type Props = {
 type FormData = {
   type: "income" | "expense";
   paymentMode: "cash" | "online";
+  splitPayment: boolean;
+  cashAmount: string;
+  onlineAmount: string;
   amount: string;
   category: string;
   description: string;
@@ -25,9 +28,14 @@ type FormData = {
 };
 
 function toFormData(entry?: Transaction): FormData {
+  const hasSplit = Boolean(entry?.splitPayment);
+
   return {
     type: entry?.type ?? "income",
     paymentMode: entry?.paymentMode ?? "cash",
+    splitPayment: hasSplit,
+    cashAmount: hasSplit ? String(entry?.splitPayment?.cashAmount ?? "") : "",
+    onlineAmount: hasSplit ? String(entry?.splitPayment?.onlineAmount ?? "") : "",
     amount: entry ? String(entry.amount) : "",
     category: entry?.category ?? "",
     description: entry?.description ?? "",
@@ -59,9 +67,47 @@ export function TransactionForm({ categories, initial, onSuccess }: Props) {
       return null;
     }
 
+    if (formData.splitPayment) {
+      const cashAmount = Number(formData.cashAmount);
+      const onlineAmount = Number(formData.onlineAmount);
+
+      if (!Number.isFinite(cashAmount) || cashAmount <= 0) {
+        toast.error("Cash amount must be greater than zero");
+        return null;
+      }
+
+      if (!Number.isFinite(onlineAmount) || onlineAmount <= 0) {
+        toast.error("Online amount must be greater than zero");
+        return null;
+      }
+
+      if (Math.abs(cashAmount + onlineAmount - parsedAmount) >= 0.01) {
+        toast.error("Cash + Online amount should match total amount");
+        return null;
+      }
+
+      return {
+        type: formData.type,
+        amount: parsedAmount,
+        paymentMode: "cash" as const,
+        splitPayment: {
+          cashAmount,
+          onlineAmount,
+        },
+        category: formData.category,
+        description: formData.description,
+        date: formData.date,
+      };
+    }
+
     return {
-      ...formData,
+      type: formData.type,
       amount: parsedAmount,
+      paymentMode: formData.paymentMode,
+      splitPayment: initial ? null : undefined,
+      category: formData.category,
+      description: formData.description,
+      date: formData.date,
     };
   };
 
@@ -140,8 +186,54 @@ export function TransactionForm({ categories, initial, onSuccess }: Props) {
               { value: "online", label: "Online" },
             ]}
             required
+            disabled={formData.splitPayment}
           />
 
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              checked={formData.splitPayment}
+              onChange={(event) =>
+                setFormData((current) => ({
+                  ...current,
+                  splitPayment: event.target.checked,
+                  paymentMode: event.target.checked ? "cash" : current.paymentMode,
+                  cashAmount: event.target.checked ? current.cashAmount : "",
+                  onlineAmount: event.target.checked ? current.onlineAmount : "",
+                }))
+              }
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            Split payment (Cash + Online)
+          </label>
+
+          {formData.splitPayment ? (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <InputField
+                label="Cash amount"
+                type="number"
+                value={formData.cashAmount}
+                onChange={(value) => setFormData((current) => ({ ...current, cashAmount: value }))}
+                required
+                min={0.01}
+                step="0.01"
+                inputMode="decimal"
+              />
+              <InputField
+                label="Online amount"
+                type="number"
+                value={formData.onlineAmount}
+                onChange={(value) => setFormData((current) => ({ ...current, onlineAmount: value }))}
+                required
+                min={0.01}
+                step="0.01"
+                inputMode="decimal"
+              />
+            </div>
+          ) : null}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -212,7 +304,11 @@ export function TransactionForm({ categories, initial, onSuccess }: Props) {
               <dt className="text-slate-500">Amount</dt>
               <dd className="font-medium text-slate-800">{formData.amount}</dd>
               <dt className="text-slate-500">Payment</dt>
-              <dd className="font-medium capitalize text-slate-800">{formData.paymentMode}</dd>
+              <dd className="font-medium capitalize text-slate-800">
+                {formData.splitPayment
+                  ? `split (cash ${formData.cashAmount || 0} + online ${formData.onlineAmount || 0})`
+                  : formData.paymentMode}
+              </dd>
               <dt className="text-slate-500">Category</dt>
               <dd className="font-medium text-slate-800">{formData.category}</dd>
               <dt className="text-slate-500">Date</dt>

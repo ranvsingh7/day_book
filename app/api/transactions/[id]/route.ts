@@ -33,6 +33,25 @@ export async function PUT(
     update.date = parsed.data.date;
   }
 
+  if (parsed.data.splitPayment === null) {
+    delete update.splitPayment;
+
+    const transaction = await TransactionModel.findOneAndUpdate(
+      { _id: id },
+      {
+        $set: update,
+        $unset: { splitPayment: "" },
+      },
+      { new: true }
+    );
+
+    if (!transaction) {
+      return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ transaction });
+  }
+
   const transaction = await TransactionModel.findOneAndUpdate(
     { _id: id },
     update,

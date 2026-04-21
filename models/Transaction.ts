@@ -18,6 +18,16 @@ const transactionSchema = new Schema(
       required: true,
       default: "cash",
     },
+    splitPayment: {
+      cashAmount: {
+        type: Number,
+        min: 0,
+      },
+      onlineAmount: {
+        type: Number,
+        min: 0,
+      },
+    },
     category: {
       type: String,
       required: true,
@@ -54,7 +64,11 @@ export type TransactionDocument = Omit<
 };
 
 const existingTransactionModel = models.Transaction;
-if (existingTransactionModel && !("paymentMode" in existingTransactionModel.schema.paths)) {
+if (
+  existingTransactionModel &&
+  (!("paymentMode" in existingTransactionModel.schema.paths) ||
+    !("splitPayment" in existingTransactionModel.schema.paths))
+) {
   delete models.Transaction;
 }
 
