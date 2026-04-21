@@ -1,4 +1,4 @@
-export type TransactionType = "income" | "expense";
+export type TransactionType = "income" | "expense" | "owner";
 export type PaymentMode = "cash" | "online";
 
 export type Transaction = {
@@ -35,6 +35,11 @@ export type DashboardResponse = {
     currentBalanceByPaymentMode: { cash: number; online: number };
     dailyClosingBalance: number;
     dailyClosingBalanceByPaymentMode: { cash: number; online: number };
+    ownerTaken: {
+      today: number;
+      month: number;
+      total: number;
+    };
   };
   monthlyBars: Array<{ date: string; income: number; expense: number }>;
   categoryBreakdown: Array<{ name: string; value: number }>;

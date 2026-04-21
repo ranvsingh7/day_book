@@ -7,7 +7,7 @@ import { TransactionModel } from "@/models/Transaction";
 
 type TransactionLite = {
   amount: number;
-  type: "income" | "expense";
+  type: "income" | "expense" | "owner";
   date: Date;
 };
 
@@ -41,7 +41,9 @@ export async function GET(request: Request) {
   for (const row of rows) {
     if (row.type === "income") {
       totalIncome += row.amount;
-    } else {
+    }
+
+    if (row.type === "expense") {
       totalExpense += row.amount;
     }
 
@@ -49,7 +51,9 @@ export async function GET(request: Request) {
     const existing = dailyMap.get(key) ?? { date: key, income: 0, expense: 0 };
     if (row.type === "income") {
       existing.income += row.amount;
-    } else {
+    }
+
+    if (row.type === "expense") {
       existing.expense += row.amount;
     }
     dailyMap.set(key, existing);

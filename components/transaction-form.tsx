@@ -16,7 +16,7 @@ type Props = {
 };
 
 type FormData = {
-  type: "income" | "expense";
+  type: "income" | "expense" | "owner";
   paymentMode: "cash" | "online";
   splitPayment: boolean;
   cashAmount: string;
@@ -166,11 +166,12 @@ export function TransactionForm({ categories, initial, onSuccess }: Props) {
             label="Type"
             value={formData.type}
             onChange={(value) =>
-              setFormData((current) => ({ ...current, type: value as "income" | "expense" }))
+              setFormData((current) => ({ ...current, type: value as "income" | "expense" | "owner" }))
             }
             options={[
               { value: "income", label: "Income" },
               { value: "expense", label: "Expense" },
+              { value: "owner", label: "Owner Taken" },
             ]}
             required
           />
@@ -295,10 +296,18 @@ export function TransactionForm({ categories, initial, onSuccess }: Props) {
               <dt className="text-slate-500">Type</dt>
               <dd
                 className={`inline-flex items-center gap-1 font-medium capitalize ${
-                  formData.type === "income" ? "text-emerald-600" : "text-rose-600"
+                  formData.type === "income"
+                    ? "text-emerald-600"
+                    : formData.type === "expense"
+                      ? "text-rose-600"
+                      : "text-slate-700"
                 }`}
               >
-                {formData.type === "income" ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                {formData.type === "income" ? (
+                  <ArrowUpRight size={14} />
+                ) : formData.type === "expense" ? (
+                  <ArrowDownRight size={14} />
+                ) : null}
                 {formData.type}
               </dd>
               <dt className="text-slate-500">Amount</dt>

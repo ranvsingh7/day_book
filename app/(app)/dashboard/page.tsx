@@ -190,6 +190,22 @@ export default function DashboardPage() {
                   )}`}
             </p>
           </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <Wallet size={14} className="text-amber-600" />
+              Owner taken
+            </p>
+            <p className="mt-1 text-base font-semibold text-amber-600">
+              {loading ? "..." : formatCurrency(data?.totals.ownerTaken.total ?? 0)}
+            </p>
+            <p className="mt-0.5 whitespace-nowrap text-[11px] font-medium text-slate-500">
+              {loading
+                ? "Today: ... | Month: ..."
+                : `Today: ${formatCurrency(data?.totals.ownerTaken.today ?? 0)} | Month: ${formatCurrency(
+                    data?.totals.ownerTaken.month ?? 0
+                  )}`}
+            </p>
+          </div>
         </div>
       </section>
 

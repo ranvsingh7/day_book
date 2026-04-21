@@ -4,7 +4,7 @@ const transactionSchema = new Schema(
   {
     type: {
       type: String,
-      enum: ["income", "expense"],
+      enum: ["income", "expense", "owner"],
       required: true,
     },
     amount: {
@@ -67,7 +67,8 @@ const existingTransactionModel = models.Transaction;
 if (
   existingTransactionModel &&
   (!("paymentMode" in existingTransactionModel.schema.paths) ||
-    !("splitPayment" in existingTransactionModel.schema.paths))
+    !("splitPayment" in existingTransactionModel.schema.paths) ||
+    !(existingTransactionModel.schema.path("type") as Schema.Types.String).enumValues.includes("owner"))
 ) {
   delete models.Transaction;
 }

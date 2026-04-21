@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const transactionTypeSchema = z.enum(["income", "expense"]);
+const transactionTypeSchema = z.enum(["income", "expense", "owner"]);
 const paymentModeSchema = z.enum(["cash", "online"]);
 const splitPaymentSchema = z.object({
   cashAmount: z.coerce.number().positive(),
@@ -106,7 +106,7 @@ export const transactionUpdateSchema = z
 export const transactionQuerySchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
-  type: z.enum(["income", "expense", "all"]).optional(),
+  type: z.enum(["income", "expense", "owner", "all"]).optional(),
   category: z.string().optional(),
   search: z.string().optional(),
 });

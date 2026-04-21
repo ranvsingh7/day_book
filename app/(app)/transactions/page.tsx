@@ -18,7 +18,7 @@ import type { Category, Transaction } from "@/types/daybook";
 type Filters = {
   from: string;
   to: string;
-  type: "all" | "income" | "expense";
+  type: "all" | "income" | "expense" | "owner";
   category: string;
 };
 
@@ -248,6 +248,7 @@ export default function TransactionsPage() {
             { value: "all", label: "All Types" },
             { value: "income", label: "Income" },
             { value: "expense", label: "Expense" },
+            { value: "owner", label: "Owner" },
           ]}
         />
         <SelectField

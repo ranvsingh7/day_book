@@ -6,7 +6,7 @@ import { connectToDatabase } from "@/lib/db";
 import { TransactionModel } from "@/models/Transaction";
 
 type TxRow = {
-  type: "income" | "expense";
+  type: "income" | "expense" | "owner";
   amount: number;
   paymentMode?: "cash" | "online";
   splitPayment?: {
@@ -32,14 +32,17 @@ function splitAmounts(item: TxRow) {
   return { cash: item.amount, online: 0 };
 }
 
-function summarize(transactions: Array<{ type: "income" | "expense"; amount: number }>) {
+function summarize(transactions: Array<{ type: "income" | "expense" | "owner"; amount: number }>) {
   return transactions.reduce(
     (acc, item) => {
       if (item.type === "income") {
         acc.income += item.amount;
-      } else {
+      }
+
+      if (item.type === "expense") {
         acc.expense += item.amount;
       }
+
       return acc;
     },
     { income: 0, expense: 0 }
@@ -122,6 +125,27 @@ export async function GET() {
     { cash: 0, online: 0 }
   );
   const month = summarize(monthTx);
+  const ownerTakenToday = todayTx.reduce((acc, item) => {
+    if (item.type !== "owner") {
+      return acc;
+    }
+
+    return acc + item.amount;
+  }, 0);
+  const ownerTakenMonth = monthTx.reduce((acc, item) => {
+    if (item.type !== "owner") {
+      return acc;
+    }
+
+    return acc + item.amount;
+  }, 0);
+  const ownerTakenTotal = allTx.reduce((acc, item) => {
+    if (item.type !== "owner") {
+      return acc;
+    }
+
+    return acc + item.amount;
+  }, 0);
   const monthIncomeByPaymentMode = monthTx.reduce(
     (acc, item) => {
       if (item.type !== "income") {
@@ -160,7 +184,7 @@ export async function GET() {
     { cash: 0, online: 0 }
   );
 
-  const currentBalance = total.income - total.expense;
+  const currentBalance = total.income - total.expense - ownerTakenTotal;
   const currentBalanceByPaymentMode = allTx.reduce(
     (acc, tx) => {
       const split = splitAmounts(tx);
@@ -176,7 +200,15 @@ export async function GET() {
     { cash: 0, online: 0 }
   );
   const dailyClosingBalance = allTx.reduce((acc, tx) => {
-    return tx.type === "income" ? acc + tx.amount : acc - tx.amount;
+    if (tx.type === "income") {
+      return acc + tx.amount;
+    }
+
+    if (tx.type === "expense" || tx.type === "owner") {
+      return acc - tx.amount;
+    }
+
+    return acc;
   }, 0);
   const dailyClosingBalanceByPaymentMode = currentBalanceByPaymentMode;
 
@@ -187,7 +219,9 @@ export async function GET() {
 
     if (tx.type === "income") {
       existing.income += tx.amount;
-    } else {
+    }
+
+    if (tx.type === "expense") {
       existing.expense += tx.amount;
     }
 
@@ -220,7 +254,9 @@ export async function GET() {
 
     if (tx.type === "income") {
       existing.income += tx.amount;
-    } else {
+    }
+
+    if (tx.type === "expense") {
       existing.expense += tx.amount;
     }
   }
@@ -247,6 +283,11 @@ export async function GET() {
       currentBalanceByPaymentMode,
       dailyClosingBalance,
       dailyClosingBalanceByPaymentMode,
+      ownerTaken: {
+        today: ownerTakenToday,
+        month: ownerTakenMonth,
+        total: ownerTakenTotal,
+      },
     },
     monthlyBars: Array.from(monthlyBarsMap.values()),
     categoryBreakdown: Array.from(categoryExpenseMap.entries()).map(([name, value]) => ({
