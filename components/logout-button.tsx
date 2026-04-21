@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 export function LogoutButton() {
@@ -26,8 +27,9 @@ export function LogoutButton() {
       type="button"
       onClick={onLogout}
       disabled={pending}
-      className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-60"
+      className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60"
     >
+      <LogOut size={16} />
       {pending ? "Logging out..." : "Logout"}
     </button>
   );

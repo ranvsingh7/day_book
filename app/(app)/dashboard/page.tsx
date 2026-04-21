@@ -1,21 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { ArrowDownRight, ArrowUpRight, Banknote, Smartphone, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Wallet } from "lucide-react";
 
 import { DashboardHeader } from "@/components/dashboard-header";
 import { TablePagination } from "@/components/table-pagination";
@@ -23,7 +10,26 @@ import { ChartCard, SkeletonBlock } from "@/components/ui";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { DashboardResponse } from "@/types/daybook";
 
-const PIE_COLORS = ["#4F46E5", "#22C55E", "#F97316", "#EC4899", "#06B6D4", "#EF4444"];
+const MonthlyBarsChart = dynamic(
+  () => import("@/components/dashboard-charts").then((mod) => mod.MonthlyBarsChart),
+  {
+    loading: () => <SkeletonBlock className="h-72 w-full" />,
+  }
+);
+
+const ExpenseBreakdownChart = dynamic(
+  () => import("@/components/dashboard-charts").then((mod) => mod.ExpenseBreakdownChart),
+  {
+    loading: () => <SkeletonBlock className="h-72 w-full" />,
+  }
+);
+
+const DailyTrendChart = dynamic(
+  () => import("@/components/dashboard-charts").then((mod) => mod.DailyTrendChart),
+  {
+    loading: () => <SkeletonBlock className="h-72 w-full" />,
+  }
+);
 
 function EmptyState({ message }: { message: string }) {
   return (
@@ -77,7 +83,7 @@ export default function DashboardPage() {
       />
 
       <section className="card-soft rounded-2xl p-4 sm:p-5">
-        <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
             <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
               <ArrowUpRight size={14} className="text-emerald-600" />
@@ -85,6 +91,13 @@ export default function DashboardPage() {
             </p>
             <p className="mt-1 text-base font-semibold text-emerald-600">
               {loading ? "..." : formatCurrency(data?.totals.today.income ?? 0)}
+            </p>
+            <p className="mt-0.5 whitespace-nowrap text-[11px] font-medium text-slate-500">
+              {loading
+                ? "C: ... | O: ..."
+                : `C: ${formatCurrency(data?.totals.todayIncomeByPaymentMode.cash ?? 0)} | O: ${formatCurrency(
+                    data?.totals.todayIncomeByPaymentMode.online ?? 0
+                  )}`}
             </p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
@@ -94,6 +107,13 @@ export default function DashboardPage() {
             </p>
             <p className="mt-1 text-base font-semibold text-rose-600">
               {loading ? "..." : formatCurrency(data?.totals.today.expense ?? 0)}
+            </p>
+            <p className="mt-0.5 whitespace-nowrap text-[11px] font-medium text-slate-500">
+              {loading
+                ? "C: ... | O: ..."
+                : `C: ${formatCurrency(data?.totals.todayExpenseByPaymentMode.cash ?? 0)} | O: ${formatCurrency(
+                    data?.totals.todayExpenseByPaymentMode.online ?? 0
+                  )}`}
             </p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
@@ -108,6 +128,13 @@ export default function DashboardPage() {
             >
               {loading ? "..." : formatCurrency(data?.totals.currentBalance ?? 0)}
             </p>
+            <p className="mt-0.5 whitespace-nowrap text-[11px] font-medium text-slate-500">
+              {loading
+                ? "C: ... | O: ..."
+                : `C: ${formatCurrency(data?.totals.currentBalanceByPaymentMode.cash ?? 0)} | O: ${formatCurrency(
+                    data?.totals.currentBalanceByPaymentMode.online ?? 0
+                  )}`}
+            </p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
             <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -116,6 +143,13 @@ export default function DashboardPage() {
             </p>
             <p className="mt-1 text-base font-semibold text-emerald-600">
               {loading ? "..." : formatCurrency(data?.totals.month.income ?? 0)}
+            </p>
+            <p className="mt-0.5 whitespace-nowrap text-[11px] font-medium text-slate-500">
+              {loading
+                ? "C: ... | O: ..."
+                : `C: ${formatCurrency(data?.totals.monthIncomeByPaymentMode.cash ?? 0)} | O: ${formatCurrency(
+                    data?.totals.monthIncomeByPaymentMode.online ?? 0
+                  )}`}
             </p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
@@ -126,23 +160,12 @@ export default function DashboardPage() {
             <p className="mt-1 text-base font-semibold text-rose-600">
               {loading ? "..." : formatCurrency(data?.totals.month.expense ?? 0)}
             </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
-            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
-              <Banknote size={14} className="text-slate-600" />
-              Cash amount this month
-            </p>
-            <p className="mt-1 text-base font-semibold text-slate-900">
-              {loading ? "..." : formatCurrency(data?.totals.monthByPaymentMode.cash ?? 0)}
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
-            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
-              <Smartphone size={14} className="text-slate-600" />
-              Online amount this month
-            </p>
-            <p className="mt-1 text-base font-semibold text-slate-900">
-              {loading ? "..." : formatCurrency(data?.totals.monthByPaymentMode.online ?? 0)}
+            <p className="mt-0.5 whitespace-nowrap text-[11px] font-medium text-slate-500">
+              {loading
+                ? "C: ... | O: ..."
+                : `C: ${formatCurrency(data?.totals.monthExpenseByPaymentMode.cash ?? 0)} | O: ${formatCurrency(
+                    data?.totals.monthExpenseByPaymentMode.online ?? 0
+                  )}`}
             </p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
@@ -157,6 +180,13 @@ export default function DashboardPage() {
             >
               {loading ? "..." : formatCurrency(data?.totals.dailyClosingBalance ?? 0)}
             </p>
+            <p className="mt-0.5 whitespace-nowrap text-[11px] font-medium text-slate-500">
+              {loading
+                ? "C: ... | O: ..."
+                : `C: ${formatCurrency(data?.totals.dailyClosingBalanceByPaymentMode.cash ?? 0)} | O: ${formatCurrency(
+                    data?.totals.dailyClosingBalanceByPaymentMode.online ?? 0
+                  )}`}
+            </p>
           </div>
         </div>
       </section>
@@ -169,18 +199,7 @@ export default function DashboardPage() {
           {loading ? (
             <SkeletonBlock className="h-72 w-full" />
           ) : data && data.monthlyBars.length > 0 ? (
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.monthlyBars}>
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="income" fill="#22C55E" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="expense" fill="#EF4444" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <MonthlyBarsChart data={data.monthlyBars} />
           ) : (
             <EmptyState message="No monthly transactions yet." />
           )}
@@ -193,27 +212,7 @@ export default function DashboardPage() {
           {loading ? (
             <SkeletonBlock className="h-72 w-full" />
           ) : data && data.categoryBreakdown.length > 0 ? (
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data.categoryBreakdown}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={50}
-                    outerRadius={95}
-                    paddingAngle={2}
-                    label
-                  >
-                    {data.categoryBreakdown.map((item, index) => (
-                      <Cell key={item.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <ExpenseBreakdownChart data={data.categoryBreakdown} />
           ) : (
             <EmptyState message="No expense data available." />
           )}
@@ -224,18 +223,7 @@ export default function DashboardPage() {
         {loading ? (
           <SkeletonBlock className="h-72 w-full" />
         ) : data && data.dailyTrend.length > 0 ? (
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.dailyTrend}>
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="income" stroke="#22C55E" strokeWidth={2} />
-                <Line type="monotone" dataKey="expense" stroke="#EF4444" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <DailyTrendChart data={data.dailyTrend} />
         ) : (
           <EmptyState message="No trend data for the past week." />
         )}

@@ -41,11 +41,11 @@ export function Sidebar({ role }: SidebarProps) {
 
   return (
     <>
-      <aside className="hidden max-h-[700px] card-soft rounded-2xl p-3 lg:sticky lg:top-4 lg:block lg:w-64">
+      <aside className="hidden card-soft rounded-2xl max-h-[calc(100vh-40px)] min-h-[calc(100vh-40px)] p-3 lg:sticky lg:top-4 lg:block lg:w-64">
         <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
           Daybook Ledger
         </p>
-        <nav className="flex max-h-[450px] flex-col gap-2 overflow-y-auto pr-1">
+        <nav className="flex flex-col gap-2">
           {visibleLinks.map((link) => {
             const isActive = pathname === link.href;
             const Icon = link.icon;
@@ -55,7 +55,7 @@ export function Sidebar({ role }: SidebarProps) {
                 key={link.href}
                 href={link.href}
                 className={clsx(
-                  "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition whitespace-nowrap",
+                  "flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition whitespace-nowrap",
                   isActive
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"
@@ -77,7 +77,7 @@ export function Sidebar({ role }: SidebarProps) {
           type="button"
           aria-label="Open menu"
           onClick={() => setMobileOpen(true)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50"
+          className="inline-flex cursor-pointer h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50"
         >
           <Menu size={16} />
         </button>
@@ -115,7 +115,7 @@ export function Sidebar({ role }: SidebarProps) {
               type="button"
               aria-label="Close menu"
               onClick={() => setMobileOpen(false)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex cursor-pointer h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50"
             >
               <X size={16} />
             </button>
@@ -132,7 +132,7 @@ export function Sidebar({ role }: SidebarProps) {
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
                   className={clsx(
-                    "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition whitespace-nowrap",
+                    "flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition whitespace-nowrap",
                     isActive
                       ? "bg-indigo-600 text-white shadow-sm"
                       : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"

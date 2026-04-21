@@ -155,7 +155,7 @@ export default function CategoriesPage() {
               <button
                 type="button"
                 onClick={() => deleteCategory(category._id)}
-                className="rounded-lg border border-rose-300 px-2 py-1 text-xs text-rose-700"
+                className="cursor-pointer rounded-lg border border-rose-300 px-2 py-1 text-xs text-rose-700"
               >
                 Delete
               </button>

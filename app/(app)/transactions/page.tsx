@@ -10,6 +10,7 @@ import { InputField } from "@/components/input-field";
 import { SelectField } from "@/components/select-field";
 import { TablePagination } from "@/components/table-pagination";
 import { TransactionForm } from "@/components/transaction-form";
+import { SkeletonBlock } from "@/components/ui";
 import { useDebounce } from "@/hooks/use-debounce";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Category, Transaction } from "@/types/daybook";
@@ -178,7 +179,7 @@ export default function TransactionsPage() {
         <button
           type="button"
           onClick={exportCsv}
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
+          className="cursor-pointer rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
         >
           Export CSV
         </button>
@@ -232,7 +233,14 @@ export default function TransactionsPage() {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
         {loading ? (
-          <p className="text-sm text-slate-500">Loading transactions...</p>
+          <div className="space-y-3">
+            <SkeletonBlock className="h-4 w-40" />
+            <SkeletonBlock className="h-11 w-full" />
+            <SkeletonBlock className="h-11 w-full" />
+            <SkeletonBlock className="h-11 w-full" />
+            <SkeletonBlock className="h-11 w-full" />
+            <SkeletonBlock className="h-8 w-52" />
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">

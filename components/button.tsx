@@ -42,7 +42,7 @@ export function Button({
     <button
       type={type}
       className={clsx(
-        "focus-ring inline-flex items-center gap-2 rounded-xl font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
+        "focus-ring inline-flex cursor-pointer items-center gap-2 rounded-xl font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
         sizeClasses[size],
         variantClasses[variant],
         fullWidth && "w-full",

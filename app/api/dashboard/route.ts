@@ -42,11 +42,11 @@ export async function GET() {
   const sevenDaysStart = startOfDay(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000));
 
   const [allTxRaw, todayTxRaw, monthTxRaw, last7TxRaw, recent] = await Promise.all([
-    TransactionModel.find({}).select("type amount date").lean(),
+    TransactionModel.find({}).select("type amount paymentMode date").lean(),
     TransactionModel.find({
       date: { $gte: todayStart, $lte: todayEnd },
     })
-      .select("type amount")
+      .select("type amount paymentMode")
       .lean(),
     TransactionModel.find({
       date: { $gte: monthStart, $lte: todayEnd },
@@ -68,7 +68,71 @@ export async function GET() {
 
   const total = summarize(allTx);
   const today = summarize(todayTx);
+  const todayIncomeByPaymentMode = todayTx.reduce(
+    (acc, item) => {
+      if (item.type !== "income") {
+        return acc;
+      }
+
+      if (item.paymentMode === "online") {
+        acc.online += item.amount;
+      } else {
+        acc.cash += item.amount;
+      }
+
+      return acc;
+    },
+    { cash: 0, online: 0 }
+  );
+  const todayExpenseByPaymentMode = todayTx.reduce(
+    (acc, item) => {
+      if (item.type !== "expense") {
+        return acc;
+      }
+
+      if (item.paymentMode === "online") {
+        acc.online += item.amount;
+      } else {
+        acc.cash += item.amount;
+      }
+
+      return acc;
+    },
+    { cash: 0, online: 0 }
+  );
   const month = summarize(monthTx);
+  const monthIncomeByPaymentMode = monthTx.reduce(
+    (acc, item) => {
+      if (item.type !== "income") {
+        return acc;
+      }
+
+      if (item.paymentMode === "online") {
+        acc.online += item.amount;
+      } else {
+        acc.cash += item.amount;
+      }
+
+      return acc;
+    },
+    { cash: 0, online: 0 }
+  );
+  const monthExpenseByPaymentMode = monthTx.reduce(
+    (acc, item) => {
+      if (item.type !== "expense") {
+        return acc;
+      }
+
+      if (item.paymentMode === "online") {
+        acc.online += item.amount;
+      } else {
+        acc.cash += item.amount;
+      }
+
+      return acc;
+    },
+    { cash: 0, online: 0 }
+  );
   const monthByPaymentMode = monthTx.reduce(
     (acc, item) => {
       if (item.paymentMode === "online") {
@@ -82,9 +146,22 @@ export async function GET() {
   );
 
   const currentBalance = total.income - total.expense;
+  const currentBalanceByPaymentMode = allTx.reduce(
+    (acc, tx) => {
+      const key = tx.paymentMode === "online" ? "online" : "cash";
+      if (tx.type === "income") {
+        acc[key] += tx.amount;
+      } else {
+        acc[key] -= tx.amount;
+      }
+      return acc;
+    },
+    { cash: 0, online: 0 }
+  );
   const dailyClosingBalance = allTx.reduce((acc, tx) => {
     return tx.type === "income" ? acc + tx.amount : acc - tx.amount;
   }, 0);
+  const dailyClosingBalanceByPaymentMode = currentBalanceByPaymentMode;
 
   const monthlyBarsMap = new Map<string, { date: string; income: number; expense: number }>();
   for (const tx of monthTx) {
@@ -134,10 +211,16 @@ export async function GET() {
   return NextResponse.json({
     totals: {
       today,
+      todayIncomeByPaymentMode,
+      todayExpenseByPaymentMode,
       month,
+      monthIncomeByPaymentMode,
+      monthExpenseByPaymentMode,
       monthByPaymentMode,
       currentBalance,
+      currentBalanceByPaymentMode,
       dailyClosingBalance,
+      dailyClosingBalanceByPaymentMode,
     },
     monthlyBars: Array.from(monthlyBarsMap.values()),
     categoryBreakdown: Array.from(categoryExpenseMap.entries()).map(([name, value]) => ({
