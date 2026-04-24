@@ -5,7 +5,9 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import clsx from "clsx";
 import {
+  BookUser,
   LayoutDashboard,
+  MessageSquare,
   PlusCircle,
   Receipt,
   Tags,
@@ -21,6 +23,8 @@ const links = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/add-entry", label: "Add Entry", icon: PlusCircle },
   { href: "/transactions", label: "Transactions", icon: Receipt },
+  { href: "/contacts", label: "Contacts", icon: BookUser },
+  { href: "/customer-queries", label: "Customer Queries", icon: MessageSquare },
   { href: "/categories", label: "Categories", icon: Tags },
   {
     href: "/monthly-summary",

@@ -44,6 +44,49 @@ export const categorySchema = z.object({
   name: z.string().trim().min(2).max(30),
 });
 
+export const contactCategorySchema = z.object({
+  name: z.string().trim().min(2).max(40),
+});
+
+export const contactCreateSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  mobile: mobileSchema,
+  email: z.preprocess(
+    (value) => {
+      if (typeof value !== "string") {
+        return value;
+      }
+
+      const trimmed = value.trim().toLowerCase();
+      return trimmed === "" ? "" : trimmed;
+    },
+    z.union([z.literal(""), z.email()])
+  ),
+  address: z.string().trim().max(200).optional().default(""),
+  notes: z.string().trim().max(300).optional().default(""),
+  categoryId: z.string().trim().min(1),
+});
+
+export const customerQueryCreateSchema = z.object({
+  customerName: z.string().trim().min(2).max(80),
+  mobile: mobileSchema,
+  queryText: z.string().trim().min(3).max(500),
+});
+
+export const customerQueryFollowupSchema = z.object({
+  status: z.enum(["open", "in-progress", "resolved"]),
+  followUpNote: z.string().trim().max(300).optional().default(""),
+  followUpDate: z.preprocess(
+    (value) => {
+      if (value === "" || value === null || typeof value === "undefined") {
+        return undefined;
+      }
+      return value;
+    },
+    z.coerce.date().optional()
+  ),
+});
+
 export const transactionCreateSchema = z
   .object({
     type: transactionTypeSchema,

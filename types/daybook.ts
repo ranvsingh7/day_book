@@ -22,6 +22,39 @@ export type Category = {
   name: string;
 };
 
+export type ContactCategory = {
+  _id: string;
+  name: string;
+};
+
+export type Contact = {
+  _id: string;
+  name: string;
+  mobile: string;
+  email?: string;
+  address?: string;
+  notes?: string;
+  categoryId:
+    | string
+    | {
+        _id: string;
+        name: string;
+      };
+  createdAt?: string;
+};
+
+export type CustomerQuery = {
+  _id: string;
+  customerName: string;
+  mobile: string;
+  queryText: string;
+  status: "open" | "in-progress" | "resolved";
+  followUpNote?: string;
+  followUpDate?: string;
+  lastFollowedUpAt?: string;
+  createdAt?: string;
+};
+
 export type DashboardResponse = {
   totals: {
     today: { income: number; expense: number };
