@@ -27,6 +27,7 @@ export default function ContactsPage() {
   const [categories, setCategories] = useState<ContactCategory[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [confirmDeleteContact, setConfirmDeleteContact] = useState<Contact | null>(null);
   const [pending, setPending] = useState(false);
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [deletingContact, setDeletingContact] = useState<string | null>(null);
@@ -221,6 +222,16 @@ export default function ContactsPage() {
     setNewCategoryName("");
   };
 
+  const openDeleteModal = (contact: Contact) => {
+    setConfirmDeleteContact(contact);
+  };
+
+  const closeDeleteModal = () => {
+    if (!deletingContact) {
+      setConfirmDeleteContact(null);
+    }
+  };
+
   const deleteContact = async (id: string) => {
     setDeletingContact(id);
     try {
@@ -232,6 +243,7 @@ export default function ContactsPage() {
 
       toast.success("Contact deleted");
       setContacts((current) => current.filter((contact) => contact._id !== id));
+      setConfirmDeleteContact(null);
     } finally {
       setDeletingContact(null);
     }
@@ -397,7 +409,7 @@ export default function ContactsPage() {
                 </Button>
                 <button
                   type="button"
-                  onClick={() => void deleteContact(contact._id)}
+                  onClick={() => openDeleteModal(contact)}
                   disabled={deletingContact === contact._id}
                   className="cursor-pointer rounded-lg border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:opacity-60"
                 >
@@ -408,6 +420,37 @@ export default function ContactsPage() {
           ))}
         </div>
       </section>
+
+      {confirmDeleteContact ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4">
+          <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+            <h2 className="text-lg font-semibold text-slate-900">Delete Contact</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Are you sure you want to delete {confirmDeleteContact.name}? This action cannot be undone.
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="xs"
+                onClick={closeDeleteModal}
+                disabled={Boolean(deletingContact)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                size="xs"
+                onClick={() => void deleteContact(confirmDeleteContact._id)}
+                disabled={deletingContact === confirmDeleteContact._id}
+              >
+                {deletingContact === confirmDeleteContact._id ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }
