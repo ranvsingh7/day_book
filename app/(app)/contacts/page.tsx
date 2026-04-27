@@ -1,11 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MessageCircle, Phone } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
 import { InputField, TextAreaField } from "@/components/input-field";
 import { SelectField } from "@/components/select-field";
+import { useDebounce } from "@/hooks/use-debounce";
 import type { Contact, ContactCategory } from "@/types/daybook";
 
 const CREATE_NEW_CATEGORY_VALUE = "__create_new_contact_category__";
@@ -22,7 +24,17 @@ function categoryNameFromContactCategory(category: Contact["categoryId"]) {
   return category.name;
 }
 
+function whatsappNumberFromMobile(mobile: string | undefined) {
+  const digits = mobile?.replace(/\D/g, "") ?? "";
+  if (!digits) {
+    return null;
+  }
+
+  return digits.startsWith("91") ? digits : `91${digits}`;
+}
+
 export default function ContactsPage() {
+  const PAGE_SIZE = 20;
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [categories, setCategories] = useState<ContactCategory[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
@@ -31,6 +43,10 @@ export default function ContactsPage() {
   const [pending, setPending] = useState(false);
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [deletingContact, setDeletingContact] = useState<string | null>(null);
+  const [loadingContacts, setLoadingContacts] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
 
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
@@ -39,6 +55,10 @@ export default function ContactsPage() {
   const [notes, setNotes] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery.trim(), 300);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const fetchingRef = useRef(false);
 
   const resetForm = () => {
     setName("");
@@ -52,67 +72,96 @@ export default function ContactsPage() {
   const categoryIdFromContact = (contact: Contact) =>
     typeof contact.categoryId === "string" ? contact.categoryId : contact.categoryId?._id;
 
-  const load = async () => {
-    const [contactResponse, categoryResponse] = await Promise.all([
-      fetch("/api/contacts", { cache: "no-store" }),
-      fetch("/api/contact-categories", { cache: "no-store" }),
-    ]);
-
-    if (contactResponse.ok) {
-      const payload = (await contactResponse.json()) as { contacts: Contact[] };
-      setContacts(payload.contacts);
-    } else {
-      setContacts([]);
-    }
-
-    if (categoryResponse.ok) {
-      const payload = (await categoryResponse.json()) as { categories: ContactCategory[] };
-      setCategories(payload.categories);
-      if (!categoryId && payload.categories.length > 0) {
-        setCategoryId(payload.categories[0]._id);
+  const buildQueryString = useCallback(
+    (pageValue: number) => {
+      const params = new URLSearchParams();
+      params.set("page", String(pageValue));
+      params.set("limit", String(PAGE_SIZE));
+      if (debouncedSearch) {
+        params.set("search", debouncedSearch);
       }
-    } else {
-      setCategories([]);
-    }
-  };
+      return params.toString();
+    },
+    [debouncedSearch]
+  );
+
+  const loadContacts = useCallback(
+    async (pageValue: number, reset = false) => {
+      fetchingRef.current = true;
+      if (reset) {
+        setLoadingContacts(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      try {
+        const response = await fetch(`/api/contacts?${buildQueryString(pageValue)}`, {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          if (reset) {
+            setContacts([]);
+          }
+          setHasMore(false);
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          contacts: Contact[];
+          total: number;
+          hasMore?: boolean;
+        };
+
+        setContacts((current) => {
+          if (reset) {
+            return payload.contacts;
+          }
+
+          const seen = new Set(current.map((contact) => contact._id));
+          const next = payload.contacts.filter((contact) => !seen.has(contact._id));
+          return [...current, ...next];
+        });
+
+        setHasMore(payload.hasMore ?? pageValue * PAGE_SIZE < payload.total);
+      } finally {
+        fetchingRef.current = false;
+        setLoadingContacts(false);
+        setLoadingMore(false);
+      }
+    },
+    [buildQueryString]
+  );
 
   useEffect(() => {
-    let cancelled = false;
-
-    const fetchInitialData = async () => {
-      const [contactResponse, categoryResponse] = await Promise.all([
-        fetch("/api/contacts", { cache: "no-store" }),
-        fetch("/api/contact-categories", { cache: "no-store" }),
-      ]);
-
-      if (cancelled) {
-        return;
-      }
-
-      if (contactResponse.ok) {
-        const payload = (await contactResponse.json()) as { contacts: Contact[] };
-        setContacts(payload.contacts);
-      } else {
-        setContacts([]);
-      }
-
-      if (categoryResponse.ok) {
-        const payload = (await categoryResponse.json()) as { categories: ContactCategory[] };
-        setCategories(payload.categories);
-        if (payload.categories.length > 0) {
-          setCategoryId((current) => current || payload.categories[0]._id);
+    fetch("/api/contact-categories", { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) {
+          return null;
         }
-      } else {
-        setCategories([]);
-      }
-    };
-
-    void fetchInitialData();
-
-    return () => {
-      cancelled = true;
-    };
+        return response.json() as Promise<{ categories: ContactCategory[] }>;
+      })
+      .then((payload) => {
+        const nextCategories = payload?.categories ?? [];
+        setCategories(nextCategories);
+        if (nextCategories.length > 0) {
+          setCategoryId((current) => current || nextCategories[0]._id);
+        }
+      });
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+    void loadContacts(1, true);
+  }, [debouncedSearch, loadContacts]);
+
+  useEffect(() => {
+    if (page === 1) {
+      return;
+    }
+    void loadContacts(page);
+  }, [page, loadContacts]);
 
   const categoryOptions = useMemo(
     () => [
@@ -121,6 +170,35 @@ export default function ContactsPage() {
     ],
     [categories]
   );
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasMore) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry.isIntersecting) {
+          return;
+        }
+
+        if (fetchingRef.current || loadingContacts || loadingMore) {
+          return;
+        }
+
+        setPage((current) => current + 1);
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, loadingContacts, loadingMore]);
 
   const createCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -189,7 +267,9 @@ export default function ContactsPage() {
       resetForm();
       setCreateOpen(false);
       setEditingContact(null);
-      await load();
+      setPage(1);
+      setHasMore(true);
+      await loadContacts(1, true);
     } finally {
       setPending(false);
     }
@@ -262,6 +342,15 @@ export default function ContactsPage() {
           Create Contact
         </Button>
       </header>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4">
+        <InputField
+          label="Search"
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search by name, mobile, or category"
+        />
+      </section>
 
       {createOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4">
@@ -377,6 +466,11 @@ export default function ContactsPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 className="text-lg font-semibold">Saved Contacts</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {loadingContacts ? (
+            <p className="text-sm text-slate-500">Loading contacts...</p>
+          ) : contacts.length === 0 ? (
+            <p className="text-sm text-slate-500">No contacts found.</p>
+          ) : null}
           {contacts.map((contact) => (
             <article
               key={contact._id}
@@ -395,10 +489,22 @@ export default function ContactsPage() {
               <div className="mt-3 flex items-center gap-2">
                 <a
                   href={`tel:${contact.mobile}`}
-                  className="inline-flex items-center rounded-lg border border-emerald-300 px-2 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50"
+                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 px-2 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50"
                 >
+                  <Phone size={14} />
                   Call
                 </a>
+                {whatsappNumberFromMobile(contact.mobile) ? (
+                  <a
+                    href={`https://wa.me/${whatsappNumberFromMobile(contact.mobile)}`}
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 px-2 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <MessageCircle size={14} />
+                    WhatsApp
+                  </a>
+                ) : null}
                 <Button
                   type="button"
                   size="xs"
@@ -411,14 +517,18 @@ export default function ContactsPage() {
                   type="button"
                   onClick={() => openDeleteModal(contact)}
                   disabled={deletingContact === contact._id}
-                  className="cursor-pointer rounded-lg border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:opacity-60"
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:opacity-60"
                 >
                   {deletingContact === contact._id ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </article>
           ))}
+          <div ref={loadMoreRef} className="h-6" />
         </div>
+        {loadingMore ? (
+          <p className="mt-3 text-sm text-slate-500">Loading more contacts...</p>
+        ) : null}
       </section>
 
       {confirmDeleteContact ? (

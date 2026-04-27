@@ -27,7 +27,7 @@ type Viewer = {
 };
 
 export default function TransactionsPage() {
-  const PAGE_SIZE = 8;
+  const PAGE_SIZE = 20;
   const [filters, setFilters] = useState<Filters>({
     from: "",
     to: "",
@@ -36,6 +36,7 @@ export default function TransactionsPage() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [categories, setCategories] = useState<string[]>([]);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [openActionFor, setOpenActionFor] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const debouncedFilters = useDebounce(filters, 350);
 
-  const queryString = useMemo(() => {
+  const filterQueryString = useMemo(() => {
     const params = new URLSearchParams();
     if (debouncedFilters.from) params.set("from", debouncedFilters.from);
     if (debouncedFilters.to) params.set("to", debouncedFilters.to);
@@ -55,39 +56,37 @@ export default function TransactionsPage() {
     return params.toString();
   }, [debouncedFilters]);
 
-  const totalPages = Math.max(1, Math.ceil(transactions.length / PAGE_SIZE));
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams(filterQueryString);
+    params.set("page", String(currentPage));
+    params.set("limit", String(PAGE_SIZE));
+    return params.toString();
+  }, [currentPage, filterQueryString]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
-  const paginatedTransactions = useMemo(() => {
-    const start = (safeCurrentPage - 1) * PAGE_SIZE;
-    return transactions.slice(start, start + PAGE_SIZE);
-  }, [safeCurrentPage, transactions]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [txResponse, categoryResponse, meResponse] = await Promise.all([
-        fetch(`/api/transactions?${queryString}`, { cache: "no-store" }),
-        fetch("/api/categories", { cache: "no-store" }),
-        fetch("/api/auth/me", { cache: "no-store" }),
-      ]);
+      const txResponse = await fetch(`/api/transactions?${queryString}`, { cache: "no-store" });
 
       if (txResponse.ok) {
-        const txPayload = (await txResponse.json()) as { transactions: Transaction[] };
+        const txPayload = (await txResponse.json()) as {
+          transactions: Transaction[];
+          total: number;
+        };
         setTransactions(txPayload.transactions);
+        setTotalCount(txPayload.total);
       } else {
         setTransactions([]);
-      }
-
-      if (categoryResponse.ok) {
-        const categoryPayload = (await categoryResponse.json()) as {
-          categories: Category[];
-        };
-        setCategories(categoryPayload.categories.map((item) => item.name));
-      }
-
-      if (meResponse.ok) {
-        const mePayload = (await meResponse.json()) as { user: Viewer };
-        setViewer(mePayload.user);
+        setTotalCount(0);
       }
     } finally {
       setLoading(false);
@@ -95,18 +94,10 @@ export default function TransactionsPage() {
   };
 
   useEffect(() => {
-    fetch(`/api/transactions?${queryString}`, { cache: "no-store" })
-      .then((response) => {
-        if (!response.ok) {
-          return null;
-        }
-        return response.json() as Promise<{ transactions: Transaction[] }>;
-      })
-      .then((payload) => {
-        setTransactions(payload?.transactions ?? []);
-      })
-      .finally(() => setLoading(false));
+    void load();
+  }, [queryString]);
 
+  useEffect(() => {
     fetch("/api/categories", { cache: "no-store" })
       .then((response) => {
         if (!response.ok) {
@@ -128,7 +119,7 @@ export default function TransactionsPage() {
       .then((payload) => {
         setViewer(payload?.user ?? null);
       });
-  }, [queryString]);
+  }, []);
 
   useEffect(() => {
     if (!openActionFor) {
@@ -186,7 +177,7 @@ export default function TransactionsPage() {
   };
 
   const exportCsv = async () => {
-    const response = await fetch(`/api/export/csv?${queryString}`);
+    const response = await fetch(`/api/export/csv?${filterQueryString}`);
     if (!response.ok) {
       toast.error("Unable to export");
       return;
@@ -291,7 +282,7 @@ export default function TransactionsPage() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedTransactions.map((entry) => (
+                {transactions.map((entry) => (
                   <tr key={entry._id} className="border-t border-slate-200">
                     <td className="py-2">{formatDate(entry.date)}</td>
                     <td className="py-2 capitalize">{entry.type}</td>
@@ -394,10 +385,10 @@ export default function TransactionsPage() {
             </table>
 
             <TablePagination
-              totalItems={transactions.length}
+              totalItems={totalCount}
               pageSize={PAGE_SIZE}
               currentPage={safeCurrentPage}
-              onPageChange={(page) => setCurrentPage(Math.min(Math.max(page, 1), totalPages))}
+              onPageChange={(page) => setCurrentPage(page)}
             />
           </div>
         )}

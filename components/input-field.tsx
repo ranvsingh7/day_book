@@ -44,7 +44,7 @@ export function InputField({
         {...inputProps}
         onKeyDown={handleKeyDown}
         onChange={(event) => onChange(event.target.value)}
-        className={`focus-ring min-h-11 rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-300 disabled:cursor-not-allowed disabled:opacity-70 ${numberInputClassNames} ${className}`}
+        className={`focus-ring min-h-11 rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-300 disabled:cursor-not-allowed disabled:opacity-70 ${numberInputClassNames} ${className}`}
       />
     </label>
   );
@@ -78,7 +78,7 @@ export function TextAreaField({
         rows={rows}
         {...textareaProps}
         onChange={(event) => onChange(event.target.value)}
-        className={`focus-ring rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-300 disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
+        className={`focus-ring rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-300 disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
       />
     </label>
   );

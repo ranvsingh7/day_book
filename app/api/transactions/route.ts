@@ -24,13 +24,15 @@ export async function GET(request: Request) {
     type: searchParams.get("type") ?? "all",
     category: searchParams.get("category") ?? undefined,
     search: searchParams.get("search") ?? undefined,
+    page: searchParams.get("page") ?? undefined,
+    limit: searchParams.get("limit") ?? undefined,
   });
 
   if (!queryParsed.success) {
     return NextResponse.json({ error: "Invalid filters" }, { status: 400 });
   }
 
-  const { from, to, type, category, search } = queryParsed.data;
+  const { from, to, type, category, search, page = 1, limit = 20 } = queryParsed.data;
 
   const where: Record<string, unknown> = {};
 
@@ -62,10 +64,17 @@ export async function GET(request: Request) {
     ];
   }
 
-  const transactionsRaw = await TransactionModel.find(where)
-    .sort({ date: -1, createdAt: -1 })
-    .populate({ path: "userId", select: "name" })
-    .lean();
+  const skip = (page - 1) * limit;
+
+  const [total, transactionsRaw] = await Promise.all([
+    TransactionModel.countDocuments(where),
+    TransactionModel.find(where)
+      .sort({ date: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate({ path: "userId", select: "name" })
+      .lean(),
+  ]);
 
   const transactions = transactionsRaw.map((transaction) => {
     const user = transaction.userId as { name?: string } | null | undefined;
@@ -76,7 +85,7 @@ export async function GET(request: Request) {
     };
   });
 
-  return NextResponse.json({ transactions });
+  return NextResponse.json({ transactions, total });
 }
 
 export async function POST(request: Request) {

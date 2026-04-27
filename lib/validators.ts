@@ -152,6 +152,8 @@ export const transactionQuerySchema = z.object({
   type: z.enum(["income", "expense", "owner", "all"]).optional(),
   category: z.string().optional(),
   search: z.string().optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
 export type TransactionInput = z.infer<typeof transactionCreateSchema>;

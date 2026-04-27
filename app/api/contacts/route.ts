@@ -7,7 +7,7 @@ import { connectToDatabase } from "@/lib/db";
 import { ContactCategoryModel } from "@/models/ContactCategory";
 import { ContactModel } from "@/models/Contact";
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireAuth();
   if ("error" in auth) {
     return auth.error;
@@ -15,13 +15,67 @@ export async function GET() {
 
   await connectToDatabase();
 
-  const userId = new Types.ObjectId(auth.session.userId);
-  const contacts = await ContactModel.find({ userId })
-    .sort({ createdAt: -1 })
-    .populate({ path: "categoryId", select: "name" })
-    .lean();
+  const { searchParams } = new URL(request.url);
+  const search = searchParams.get("search")?.trim() ?? "";
+  const pageRaw = Number(searchParams.get("page") ?? "1");
+  const limitRaw = Number(searchParams.get("limit") ?? "20");
+  const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.floor(limitRaw), 100) : 20;
+  const skip = (page - 1) * limit;
 
-  return NextResponse.json({ contacts });
+  const userId = new Types.ObjectId(auth.session.userId);
+  const regex = search ? new RegExp(search, "i") : null;
+
+  const pipeline = [
+    { $match: { userId } },
+    {
+      $lookup: {
+        from: "contactcategories",
+        localField: "categoryId",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+  ];
+
+  if (regex) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { name: regex },
+          { mobile: regex },
+          { "category.name": regex },
+        ],
+      },
+    });
+  }
+
+  pipeline.push({ $sort: { createdAt: -1 } });
+  pipeline.push({
+    $facet: {
+      data: [{ $skip: skip }, { $limit: limit }],
+      total: [{ $count: "count" }],
+    },
+  });
+
+  const result = await ContactModel.aggregate(pipeline);
+  const data = (result[0]?.data ?? []) as Array<
+    Record<string, unknown> & { _id: Types.ObjectId; category?: { _id: Types.ObjectId; name: string } }
+  >;
+  const total = (result[0]?.total?.[0]?.count as number | undefined) ?? 0;
+
+  const contacts = data.map((contact) => ({
+    ...contact,
+    _id: String(contact._id),
+    categoryId: contact.category
+      ? { _id: String(contact.category._id), name: contact.category.name }
+      : contact.categoryId
+        ? String(contact.categoryId)
+        : "",
+  }));
+
+  return NextResponse.json({ contacts, total, hasMore: page * limit < total });
 }
 
 export async function POST(request: Request) {
