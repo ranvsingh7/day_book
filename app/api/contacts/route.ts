@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Types } from "mongoose";
+import { Types, type PipelineStage } from "mongoose";
 
 import { requireAuth } from "@/lib/api";
 import { contactCreateSchema } from "@/lib/validators";
@@ -26,8 +26,8 @@ export async function GET(request: Request) {
   const userId = new Types.ObjectId(auth.session.userId);
   const regex = search ? new RegExp(search, "i") : null;
 
-  const pipeline = [
-    { $match: { userId } },
+  const pipeline: PipelineStage[] = [
+    { $match: { userId } } as PipelineStage.Match,
     {
       $lookup: {
         from: "contactcategories",
@@ -35,8 +35,8 @@ export async function GET(request: Request) {
         foreignField: "_id",
         as: "category",
       },
-    },
-    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+    } as PipelineStage.Lookup,
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } } as PipelineStage.Unwind,
   ];
 
   if (regex) {
@@ -48,16 +48,16 @@ export async function GET(request: Request) {
           { "category.name": regex },
         ],
       },
-    });
+    } as PipelineStage.Match);
   }
 
-  pipeline.push({ $sort: { createdAt: -1 } });
+  pipeline.push({ $sort: { createdAt: -1 } } as PipelineStage.Sort);
   pipeline.push({
     $facet: {
       data: [{ $skip: skip }, { $limit: limit }],
       total: [{ $count: "count" }],
     },
-  });
+  } as PipelineStage.Facet);
 
   const result = await ContactModel.aggregate(pipeline);
   const data = (result[0]?.data ?? []) as Array<
