@@ -15,7 +15,7 @@ export async function GET() {
   await connectToDatabase();
 
   const userId = new Types.ObjectId(auth.session.userId);
-  const matchBase = auth.session.role === "admin" ? {} : { userId };
+  const matchBase = {};
 
   const now = new Date();
   const todayStart = startOfDay(now);
