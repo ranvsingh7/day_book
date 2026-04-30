@@ -43,6 +43,7 @@ export default function TransactionsPage() {
   const [splitInfoFor, setSplitInfoFor] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deletePending, setDeletePending] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<Transaction | null>(null);
   const [viewer, setViewer] = useState<Viewer | null>(null);
   const [loading, setLoading] = useState(true);
   const debouncedFilters = useDebounce(filters, 350);
@@ -283,7 +284,11 @@ export default function TransactionsPage() {
               </thead>
               <tbody>
                 {transactions.map((entry) => (
-                  <tr key={entry._id} className="border-t border-slate-200">
+                  <tr
+                    key={entry._id}
+                    className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
+                    onClick={() => setDetailTarget(entry)}
+                  >
                     <td className="py-2">{formatDate(entry.date)}</td>
                     <td className="py-2 capitalize">{entry.type}</td>
                     <td
@@ -346,6 +351,7 @@ export default function TransactionsPage() {
                                 current === entry._id ? null : entry._id
                               )
                             }
+                            onPointerDown={(event) => event.stopPropagation()}
                             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50"
                           >
                             <MoreHorizontal size={16} />
@@ -358,6 +364,7 @@ export default function TransactionsPage() {
                                   setOpenActionFor(null);
                                   setEditing(entry);
                                 }}
+                                onPointerDown={(event) => event.stopPropagation()}
                                 className="flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100"
                               >
                                 <Pencil size={12} />
@@ -369,6 +376,7 @@ export default function TransactionsPage() {
                                   setOpenActionFor(null);
                                   void onDelete(entry._id);
                                 }}
+                                onPointerDown={(event) => event.stopPropagation()}
                                 className="mt-1 flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs font-medium text-rose-700 transition hover:bg-rose-50"
                               >
                                 <Trash2 size={12} />
@@ -417,6 +425,51 @@ export default function TransactionsPage() {
                 void load();
               }}
             />
+          </section>
+        </div>
+      ) : null}
+
+      {detailTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4"
+          onClick={() => setDetailTarget(null)}
+        >
+          <section
+            className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Transaction Details</h2>
+              <Button type="button" variant="outline" size="xs" onClick={() => setDetailTarget(null)}>
+                Close
+              </Button>
+            </div>
+            <dl className="grid grid-cols-[130px_1fr] gap-x-3 gap-y-2 text-sm">
+              <dt className="text-slate-500">Type</dt>
+              <dd className="font-medium capitalize text-slate-800">{detailTarget.type}</dd>
+              <dt className="text-slate-500">Amount</dt>
+              <dd className="font-medium text-slate-800">{formatCurrency(detailTarget.amount)}</dd>
+              <dt className="text-slate-500">Payment</dt>
+              <dd className="font-medium capitalize text-slate-800">
+                {detailTarget.splitPayment
+                  ? `split (cash ${formatCurrency(detailTarget.splitPayment.cashAmount)} + online ${formatCurrency(
+                      detailTarget.splitPayment.onlineAmount
+                    )})`
+                  : detailTarget.paymentMode ?? "cash"}
+              </dd>
+              <dt className="text-slate-500">Category</dt>
+              <dd className="font-medium text-slate-800">{detailTarget.category}</dd>
+              <dt className="text-slate-500">Date</dt>
+              <dd className="font-medium text-slate-800">{formatDate(detailTarget.date)}</dd>
+              <dt className="text-slate-500">Created at</dt>
+              <dd className="font-medium text-slate-800">
+                {formatDateTime(detailTarget.createdAt || detailTarget.date)}
+              </dd>
+              <dt className="text-slate-500">Created by</dt>
+              <dd className="font-medium text-slate-800">{detailTarget.createdBy || "Unknown"}</dd>
+              <dt className="text-slate-500">Description</dt>
+              <dd className="font-medium text-slate-800">{detailTarget.description || "-"}</dd>
+            </dl>
           </section>
         </div>
       ) : null}

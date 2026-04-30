@@ -94,7 +94,7 @@ export const transactionCreateSchema = z
     paymentMode: paymentModeSchema.default("cash"),
     splitPayment: splitPaymentSchema.optional(),
     category: z.string().trim().min(2).max(40),
-    description: z.string().trim().max(200).optional().default(""),
+    description: z.string().trim().max(500).optional().default(""),
     date: z.coerce.date(),
   })
   .refine(
@@ -119,7 +119,7 @@ export const transactionUpdateSchema = z
     paymentMode: paymentModeSchema.default("cash"),
     splitPayment: splitPaymentSchema.nullable().optional(),
     category: z.string().trim().min(2).max(40),
-    description: z.string().trim().max(200).optional().default(""),
+    description: z.string().trim().max(500).optional().default(""),
     date: z.coerce.date(),
   })
   .partial()

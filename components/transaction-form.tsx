@@ -49,6 +49,7 @@ function toFormData(entry?: Transaction): FormData {
 }
 
 export function TransactionForm({ categories, initial, onSuccess }: Props) {
+  const descriptionLimit = 500;
   const [pending, setPending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>(() => toFormData(initial));
@@ -280,7 +281,11 @@ export function TransactionForm({ categories, initial, onSuccess }: Props) {
           value={formData.description}
           onChange={(value) => setFormData((current) => ({ ...current, description: value }))}
           placeholder="Notes for this transaction"
+          maxLength={descriptionLimit}
         />
+        <p className="text-xs text-slate-500">
+          {formData.description.length}/{descriptionLimit}
+        </p>
 
         <button
           type="submit"
