@@ -287,7 +287,13 @@ export default function TransactionsPage() {
                   <tr
                     key={entry._id}
                     className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
-                    onClick={() => setDetailTarget(entry)}
+                    onClick={(event) => {
+                      const target = event.target;
+                      if (target instanceof Element && target.closest("[data-action-popover='true']")) {
+                        return;
+                      }
+                      setDetailTarget(entry);
+                    }}
                   >
                     <td className="py-2">{formatDate(entry.date)}</td>
                     <td className="py-2 capitalize">{entry.type}</td>
@@ -357,7 +363,9 @@ export default function TransactionsPage() {
                             <MoreHorizontal size={16} />
                           </button>
                           {openActionFor === entry._id ? (
-                            <div className="absolute right-0 top-9 z-20 w-28 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+                            <div
+                              className="absolute right-0 top-9 z-20 w-28 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
+                            >
                               <button
                                 type="button"
                                 onClick={() => {
