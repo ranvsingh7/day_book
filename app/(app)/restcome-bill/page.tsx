@@ -9,6 +9,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 
 type BillForm = {
   customerName: string;
+  customerMobile: string;
   checkInDate: string;
   checkOutDate: string;
   amount: string;
@@ -17,6 +18,7 @@ type BillForm = {
 
 const EMPTY_FORM: BillForm = {
   customerName: "",
+  customerMobile: "",
   checkInDate: "",
   checkOutDate: "",
   amount: "",
@@ -31,7 +33,12 @@ export default function RestcomeBillPage() {
   const amountValue = Number.parseFloat(form.amount);
   const hasValidAmount = Number.isFinite(amountValue) && amountValue > 0;
   const isComplete =
-    form.customerName && form.checkInDate && form.checkOutDate && form.roomNumber && hasValidAmount;
+    form.customerName &&
+    form.customerMobile &&
+    form.checkInDate &&
+    form.checkOutDate &&
+    form.roomNumber &&
+    hasValidAmount;
 
   const stayNights = useMemo(() => {
     if (!form.checkInDate || !form.checkOutDate) {
@@ -93,6 +100,15 @@ export default function RestcomeBillPage() {
               value={form.customerName}
               onChange={onChangeField("customerName")}
               placeholder="Customer name"
+              containerClassName="sm:col-span-2"
+              required
+            />
+            <InputField
+              label="Customer mobile"
+              value={form.customerMobile}
+              onChange={onChangeField("customerMobile")}
+              type="tel"
+              placeholder="Mobile number"
               containerClassName="sm:col-span-2"
               required
             />
@@ -200,6 +216,10 @@ export default function RestcomeBillPage() {
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Room</p>
                 <p className="text-base font-semibold text-slate-900">{form.roomNumber}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Mobile</p>
+                <p className="text-base font-semibold text-slate-900">{form.customerMobile}</p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Check-in</p>

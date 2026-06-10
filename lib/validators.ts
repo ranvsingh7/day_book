@@ -6,6 +6,10 @@ const splitPaymentSchema = z.object({
   cashAmount: z.coerce.number().positive(),
   onlineAmount: z.coerce.number().positive(),
 });
+const monthSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Month must be in YYYY-MM format");
 const mobileSchema = z
   .string()
   .trim()
@@ -85,6 +89,21 @@ export const customerQueryFollowupSchema = z.object({
     },
     z.coerce.date().optional()
   ),
+});
+
+export const electricityMeterCreateSchema = z.object({
+  name: z.string().trim().min(2).max(60),
+  meterNumber: z.string().trim().min(2).max(40),
+  customerName: z.string().trim().min(2).max(80),
+  provider: z.string().trim().max(80).optional().default(""),
+  location: z.string().trim().max(120).optional().default(""),
+  startReading: z.coerce.number().min(0),
+  startDate: z.coerce.date(),
+});
+
+export const electricityReadingCreateSchema = z.object({
+  readingMonth: monthSchema,
+  reading: z.coerce.number().min(0),
 });
 
 export const transactionCreateSchema = z

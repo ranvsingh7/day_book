@@ -55,6 +55,29 @@ export type CustomerQuery = {
   createdAt?: string;
 };
 
+export type ElectricityMeter = {
+  _id: string;
+  name: string;
+  meterNumber: string;
+  customerName: string;
+  provider?: string;
+  location?: string;
+  startReading: number;
+  startDate: string;
+  latestReading?: {
+    readingMonth: string;
+    reading: number;
+  } | null;
+};
+
+export type ElectricityReading = {
+  _id: string;
+  meterId: string;
+  readingMonth: string;
+  reading: number;
+  createdAt?: string;
+};
+
 export type DashboardResponse = {
   totals: {
     today: { income: number; expense: number };
